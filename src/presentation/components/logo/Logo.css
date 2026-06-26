@@ -1,0 +1,149 @@
+.logo-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+
+.logo-sm {
+  width: 36px;
+  height: 36px;
+}
+
+.logo-md {
+  width: 52px;
+  height: 52px;
+}
+
+.logo-lg {
+  width: 96px;
+  height: 96px;
+}
+
+/* Central glowing orb */
+.logo-orb {
+  position: absolute;
+  width: 55%;
+  height: 55%;
+  border-radius: 50%;
+  background: radial-gradient(circle, #00d9ff 0%, #0088ff 70%, #0044aa 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+.animate-orb {
+  animation: orbGlow 3s ease-in-out infinite;
+}
+
+.logo-inner-core {
+  width: 40%;
+  height: 40%;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 0 10px #ffffff, inset 0 0 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Pulsing rings radiating outward */
+.logo-pulse-ring-1,
+.logo-pulse-ring-2 {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 217, 255, 0.4);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.animate-orb .logo-pulse-ring-1 {
+  animation: orbPulse 3s cubic-bezier(0.25, 0, 0, 1) infinite;
+}
+
+.animate-orb .logo-pulse-ring-2 {
+  animation: orbPulse 3s cubic-bezier(0.25, 0, 0, 1) infinite;
+  animation-delay: 1.5s;
+}
+
+@keyframes orbPulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+/* Orbiting Ring */
+.logo-ring {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 1.5px dashed rgba(0, 136, 255, 0.35);
+  box-sizing: border-box;
+  z-index: 1;
+}
+
+.animate-ring {
+  animation: spinSlow 12s linear infinite;
+}
+
+/* Orbiting node dots */
+.logo-dot {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #00d9ff;
+  box-shadow: 0 0 8px #00d9ff, 0 0 16px #0088ff;
+}
+
+.logo-sm .logo-dot {
+  width: 5px;
+  height: 5px;
+}
+
+.logo-lg .logo-dot {
+  width: 12px;
+  height: 12px;
+}
+
+.dot-1 {
+  top: 0;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.dot-2 {
+  bottom: 0;
+  left: 50%;
+  transform: translate(-50%, 50%);
+}
+
+/* Custom smaller pulse for sm size to avoid screen clipping */
+.logo-sm .animate-orb .logo-pulse-ring-1 {
+  animation: orbPulseSm 3s cubic-bezier(0.25, 0, 0, 1) infinite;
+}
+
+.logo-sm .animate-orb .logo-pulse-ring-2 {
+  animation: orbPulseSm 3s cubic-bezier(0.25, 0, 0, 1) infinite;
+  animation-delay: 1.5s;
+}
+
+@keyframes orbPulseSm {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}

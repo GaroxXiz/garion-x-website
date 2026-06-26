@@ -1,0 +1,227 @@
+/* Core Design Tokens & Theme Configuration */
+:root {
+  /* Dark Slate / Cyberpunk Theme Colors */
+  --bg-primary: #060913;      /* Deep space black-blue */
+  --bg-secondary: #0d1222;    /* Dark slate panel */
+  --bg-tertiary: #161e36;     /* Medium slate container */
+  --bg-hover: #1e294b;        /* Active slate state */
+  
+  --accent-primary: #0088ff;  /* Radiant electric blue */
+  --accent-secondary: #00d9ff;/* Bright cyber cyan */
+  --accent-glow: rgba(0, 136, 255, 0.15);
+  --accent-glow-strong: rgba(0, 217, 255, 0.4);
+  
+  --text-primary: #f1f5f9;    /* Clean off-white */
+  --text-secondary: #94a3b8;  /* Muted slate blue */
+  --text-muted: #64748b;      /* Darker slate for hints */
+  
+  --border-color: #1e293b;    /* Border lines */
+  --border-glow: rgba(0, 136, 255, 0.08);
+
+  --message-user-bg: linear-gradient(135deg, #0066cc 0%, #0088ff 100%);
+  --message-bot-bg: #111827;
+  
+  --font-family: var(--font-geist-sans), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --border-radius-sm: 8px;
+  --border-radius-md: 12px;
+  --border-radius-lg: 18px;
+}
+
+/* Theme overrides */
+html.theme-pink {
+  --accent-primary: #ec4899;   /* Hot pink */
+  --accent-secondary: #f472b6; /* Soft pink */
+  --accent-glow: rgba(236, 72, 153, 0.15);
+  --accent-glow-strong: rgba(244, 114, 182, 0.4);
+  --message-user-bg: linear-gradient(135deg, #db2777 0%, #ec4899 100%);
+  --border-glow: rgba(236, 72, 153, 0.08);
+}
+html.theme-pink .bot-avatar-label {
+  background: linear-gradient(135deg, #db2777 0%, #f472b6 100%);
+  box-shadow: 0 0 10px rgba(244, 114, 182, 0.2);
+}
+
+html.theme-green {
+  --accent-primary: #10b981;   /* Matrix green */
+  --accent-secondary: #34d399; /* Bright green */
+  --accent-glow: rgba(16, 185, 129, 0.15);
+  --accent-glow-strong: rgba(52, 211, 153, 0.4);
+  --message-user-bg: linear-gradient(135deg, #059669 0%, #10b981 100%);
+  --border-glow: rgba(16, 185, 129, 0.08);
+}
+html.theme-green .bot-avatar-label {
+  background: linear-gradient(135deg, #059669 0%, #34d399 100%);
+  box-shadow: 0 0 10px rgba(52, 211, 153, 0.2);
+}
+
+html.theme-amber {
+  --accent-primary: #f59e0b;   /* Retro amber */
+  --accent-secondary: #fbbf24; /* Golden glow */
+  --accent-glow: rgba(245, 158, 11, 0.15);
+  --accent-glow-strong: rgba(251, 191, 36, 0.4);
+  --message-user-bg: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+  --border-glow: rgba(245, 158, 11, 0.08);
+}
+html.theme-amber .bot-avatar-label {
+  background: linear-gradient(135deg, #d97706 0%, #fbbf24 100%);
+  box-shadow: 0 0 10px rgba(251, 191, 36, 0.2);
+}
+
+/* Reset and Global Styles */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  height: 100%;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom Scrollbar Styles */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-primary);
+}
+
+/* Global Animations */
+@keyframes orbGlow {
+  0% {
+    transform: scale(0.98);
+    box-shadow: 0 0 15px rgba(0, 136, 255, 0.3), 0 0 30px rgba(0, 217, 255, 0.15);
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow: 0 0 25px rgba(0, 136, 255, 0.6), 0 0 50px rgba(0, 217, 255, 0.3);
+  }
+  100% {
+    transform: scale(0.98);
+    box-shadow: 0 0 15px rgba(0, 136, 255, 0.3), 0 0 30px rgba(0, 217, 255, 0.15);
+  }
+}
+
+@keyframes spinSlow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes typingGlow {
+  0%, 100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+}
+
+/* Helper Classes */
+.animate-fade-in {
+  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.glow-effect {
+  position: relative;
+}
+
+.glow-effect::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: inherit;
+  box-shadow: 0 0 20px var(--accent-glow);
+  opacity: 0;
+  transition: var(--transition-smooth);
+  pointer-events: none;
+}
+
+.glow-effect:hover::before {
+  opacity: 1;
+}
+
+/* Glassmorphism utility */
+.glass-panel {
+  background: rgba(13, 18, 34, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-color);
+}
+
+/* Mobile Sidebar Backdrop Overlay */
+.mobile-sidebar-overlay {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-sidebar-overlay {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 9;
+  }
+}
+
+/* Hide Next.js Development Indicator Badges & Overlays */
+#nextjs-dev-indicator,
+.nextjs-static-indicator,
+nextjs-portal [style*="position: fixed; bottom:"] {
+  display: none !important;
+}
+

@@ -1,0 +1,422 @@
+.usage-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 6, 15, 0.82);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 20px;
+}
+
+.usage-modal-content {
+  width: 100%;
+  max-width: 740px;
+  max-height: 90vh;
+  overflow-y: auto;
+  border-radius: var(--border-radius-lg);
+  padding: 28px 30px 24px;
+  position: relative;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 20px 60px rgba(0, 0, 0, 0.5),
+    0 0 80px rgba(0, 100, 255, 0.06);
+}
+
+/* ── Header ── */
+.usage-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 22px;
+}
+
+.usage-header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.usage-header-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(0, 136, 255, 0.15), rgba(0, 217, 255, 0.08));
+  border: 1px solid rgba(0, 136, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-primary);
+  flex-shrink: 0;
+}
+
+.usage-modal-header h2 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  margin-bottom: 3px;
+}
+
+.usage-modal-header p {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.usage-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.usage-refresh-btn,
+.usage-close-btn {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-smooth);
+}
+
+.usage-refresh-btn:hover:not(:disabled) {
+  color: var(--accent-primary);
+  border-color: var(--accent-primary);
+  background: rgba(0, 136, 255, 0.08);
+}
+
+.usage-close-btn:hover {
+  color: var(--text-primary);
+  border-color: rgba(255, 255, 255, 0.15);
+  background: var(--bg-hover);
+}
+
+.usage-refresh-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Summary Bar ── */
+.usage-summary-bar {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 14px 20px;
+  margin-bottom: 24px;
+}
+
+.summary-stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.stat-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.03em;
+}
+
+.stat-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  font-weight: 600;
+}
+
+.summary-divider {
+  width: 1px;
+  height: 38px;
+  background: var(--border-color);
+  flex-shrink: 0;
+}
+
+/* ── Rings Grid ── */
+.usage-rings-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.usage-ring-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 18px 16px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  transition: var(--transition-smooth);
+  position: relative;
+  overflow: hidden;
+}
+
+.usage-ring-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+}
+
+.usage-ring-card:hover {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+.ring-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  justify-content: center;
+}
+
+.ring-model-icon {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.ring-model-name {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+}
+
+/* ── Ring SVG ── */
+.usage-ring-svg {
+  overflow: visible;
+}
+
+.usage-ring-progress {
+  transition: stroke-dashoffset 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ring-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ring-center-content {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ring-pct-text {
+  display: flex;
+  align-items: baseline;
+  gap: 1px;
+}
+
+.ring-pct-number {
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.ring-pct-symbol {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+/* ── Ring Stats ── */
+.ring-card-stats {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ring-stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2px 0;
+}
+
+.ring-stat-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+
+.ring-stat-value {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.ring-stat-date {
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+/* ── Linear bar ── */
+.ring-linear-bar-track {
+  width: 100%;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.ring-linear-bar-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Loading / Error states ── */
+.usage-loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 60px 20px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.usage-spinner-large {
+  width: 38px;
+  height: 38px;
+  border: 3px solid rgba(255, 255, 255, 0.08);
+  border-top-color: var(--accent-primary);
+  border-radius: 50%;
+  animation: spinSlow 0.8s linear infinite;
+}
+
+.usage-error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 50px 20px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.usage-retry-btn {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+  border-radius: 8px;
+  padding: 8px 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.usage-retry-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+/* ── Footer Note ── */
+.usage-footer-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  padding-top: 4px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 620px) {
+  .usage-rings-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .usage-modal-content {
+    padding: 20px 16px;
+  }
+
+  .usage-summary-bar {
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+  }
+
+  .summary-divider {
+    width: 100%;
+    height: 1px;
+  }
+}
+
+/* ── Analytics Dashboard Section ── */
+.usage-analytics-section {
+  width: 100%;
+  margin-bottom: 24px;
+}
+
+.analytics-box {
+  background: rgba(255, 255, 255, 0.015);
+  border: 1px solid var(--border-color);
+  box-shadow: inset 0 0 20px rgba(0, 136, 255, 0.02);
+}
+
+.share-bar-visual {
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.share-bar-segment {
+  box-shadow: inset 0 -3px 6px rgba(0, 0, 0, 0.2);
+}
+
+.legend-dot {
+  box-shadow: 0 0 6px currentColor;
+}
+
+.chart-bar-fill {
+  transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.chart-bar-track {
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.chart-row:hover .chart-bar-fill {
+  filter: brightness(1.2);
+}
