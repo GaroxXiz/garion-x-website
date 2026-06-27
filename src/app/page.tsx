@@ -11,7 +11,7 @@ export default function Home() {
   const { isSidebarOpen, setSidebarOpen, isAgentModalOpen, setAgentModalOpen } = useChat();
 
   return (
-    <div style={{ display: 'flex', width: '100vw', height: '100vh', overflow: 'hidden', position: 'relative' }}>
+    <div style={{ display: 'flex', width: '100vw', height: '100dvh', overflow: 'hidden', position: 'relative' }}>
       {/* Sidebar overlay backdrop for mobile view */}
       {isSidebarOpen && (
         <div 

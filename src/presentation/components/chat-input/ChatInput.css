@@ -364,10 +364,15 @@
     gap: 8px;
   }
   .personality-selector-wrapper {
-    flex: 1;
+    flex: 1 1 calc(50% - 4px);
     min-width: 140px;
   }
-  .personality-selector, .model-selector {
+  .model-selector {
+    flex: 1 1 calc(50% - 4px);
+    min-width: 120px;
+    height: 32px;
+  }
+  .personality-selector {
     height: 32px;
     flex: 1;
   }
@@ -384,7 +389,7 @@
     min-width: 120px;
     font-size: 0.9rem;
     order: 3;
-    flex: 1 1 100%;
+    flex: 1;
   }
   .mic-btn {
     height: 32px;

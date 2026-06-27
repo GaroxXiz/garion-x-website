@@ -1,6 +1,6 @@
 .chat-area {
   flex: 1;
-  height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   background-color: var(--bg-primary);
@@ -297,8 +297,17 @@
     max-width: 90%;
   }
 
-  .export-trigger-btn span {
+  .export-trigger-btn span,
+  .share-trigger-btn span {
     display: none; /* Hide text on mobile for spacing */
+  }
+
+  .model-badge {
+    display: none; /* Hide model badge on mobile to free up space */
+  }
+
+  .header-chat-title {
+    max-width: 140px; /* Reduce title size so buttons fit without breaking layout */
   }
 }
 

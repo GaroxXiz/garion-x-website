@@ -48,10 +48,13 @@ export const ChatArea: React.FC = () => {
 
     window.speechSynthesis.cancel();
 
-    // Clean up code blocks and html markup for speech
+    // Clean up code blocks, markdown characters, and html markup for speech
     const cleanText = text
       .replace(/```[\s\S]*?```/g, '') // Remove code blocks
       .replace(/<[^>]*>/g, '') // Remove HTML
+      .replace(/\*/g, '') // Remove all asterisks to prevent reading "asterisk"
+      .replace(/_/g, '') // Remove all underscores
+      .replace(/`/g, '') // Remove all backticks
       .trim();
 
     if (!cleanText) return;
