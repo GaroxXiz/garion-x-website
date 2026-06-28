@@ -34,9 +34,11 @@ export const AuthModal: React.FC = () => {
         // Stage 1: Send OTP to Email
         const res = await sendOtp(email);
         setIsOtpSent(true);
-        // Show alert containing mock OTP for testing
-        if (res && res.otp) {
-          alert(`[MOCK EMAIL SERVICE] OTP Code sent: ${res.otp}`);
+        // Show alert conditionally based on whether SMTP is simulated
+        if (res && res.otp && res.isMock) {
+          alert(`[MOCK EMAIL SERVICE] SMTP_USER is not configured in backend .env.\nMock OTP Code: ${res.otp}`);
+        } else {
+          alert(`A security OTP code has been sent successfully via Gmail to: ${email}`);
         }
       } else {
         // Stage 2: Verify OTP
@@ -45,6 +47,24 @@ export const AuthModal: React.FC = () => {
       }
     } catch (err: any) {
       setErrorMsg(err.message || 'Authentication failed. Please try again.');
+    } finally {
+      setLoadingState(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    setErrorMsg(null);
+    setLoadingState(true);
+    try {
+      const res = await sendOtp(email);
+      setOtp('');
+      if (res && res.otp && res.isMock) {
+        alert(`[MOCK EMAIL SERVICE] SMTP_USER is not configured in backend .env.\nMock OTP Code: ${res.otp}`);
+      } else {
+        alert(`A new security OTP code has been sent successfully via Gmail to: ${email}`);
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Failed to resend OTP code.');
     } finally {
       setLoadingState(false);
     }
@@ -147,16 +167,26 @@ export const AuthModal: React.FC = () => {
                   />
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', marginTop: '4px' }}>
                     <span style={{ color: 'var(--text-secondary)' }}>Sent to: <strong>{email}</strong></span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsOtpSent(false);
-                        setOtp('');
-                      }}
-                      style={{ background: 'transparent', border: 'none', color: '#00ffcc', cursor: 'pointer', fontWeight: 600 }}
-                    >
-                      Change Email
-                    </button>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <button
+                        type="button"
+                        onClick={handleResendOtp}
+                        style={{ background: 'transparent', border: 'none', color: '#00d9ff', cursor: 'pointer', fontWeight: 600, padding: 0 }}
+                        disabled={loadingState}
+                      >
+                        Resend OTP
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsOtpSent(false);
+                          setOtp('');
+                        }}
+                        style={{ background: 'transparent', border: 'none', color: '#00ffcc', cursor: 'pointer', fontWeight: 600, padding: 0 }}
+                      >
+                        Change Email
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
