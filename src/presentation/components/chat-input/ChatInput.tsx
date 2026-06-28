@@ -169,7 +169,8 @@ export const ChatInput: React.FC = () => {
     }
   };
 
-  const isButtonsDisabled = loading || !!streamingMessageId || uploading || (!input.trim() && !attachmentUrl);
+  const isUnderMaintenance = selectedPersonalityId === 'video_generator' || activeChat?.personalityId === 'video_generator';
+  const isButtonsDisabled = loading || !!streamingMessageId || uploading || isUnderMaintenance || (!input.trim() && !attachmentUrl);
 
   return (
     <form className="chat-input-form" onSubmit={handleSubmit}>
@@ -181,6 +182,26 @@ export const ChatInput: React.FC = () => {
         accept="image/*,video/*"
         style={{ display: 'none' }}
       />
+
+      {/* Maintenance Banner */}
+      {isUnderMaintenance && (
+        <div className="maintenance-banner" style={{
+          background: 'rgba(239, 68, 68, 0.12)',
+          border: '1px solid rgba(239, 68, 68, 0.35)',
+          borderRadius: '8px',
+          padding: '8px 16px',
+          fontSize: '0.78rem',
+          fontWeight: '700',
+          color: '#f87171',
+          textAlign: 'center',
+          marginBottom: '8px',
+          letterSpacing: '0.5px',
+          boxShadow: '0 0 10px rgba(239, 68, 68, 0.05)',
+          fontFamily: 'var(--font-geist-sans), sans-serif'
+        }}>
+          ⚠️ FITUR ANIMATEX (VIDEO GENERATOR) SEDANG DALAM PROSES MAINTENANCE
+        </div>
+      )}
 
       {/* Attachment Preview Badge Overlay */}
       {attachmentUrl && (
@@ -252,7 +273,7 @@ export const ChatInput: React.FC = () => {
           <select
             value={selectedModelId}
             onChange={(e) => setSelectedModelId(e.target.value)}
-            disabled={loading || !!streamingMessageId} // Can switch model mid-conversation
+            disabled={loading || !!streamingMessageId || isUnderMaintenance} // Can switch model mid-conversation
             className="model-select"
             title="Select AI Model"
           >
@@ -271,9 +292,9 @@ export const ChatInput: React.FC = () => {
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          disabled={loading || !!streamingMessageId || uploading}
+          disabled={loading || !!streamingMessageId || uploading || isUnderMaintenance}
           className={`upload-attachment-btn ${uploading ? 'uploading' : ''}`}
-          title="Attach Image or Video"
+          title={isUnderMaintenance ? "Maintenance Mode" : "Attach Image or Video"}
         >
           {uploading ? (
             <div className="upload-spinner-small" />
@@ -291,9 +312,9 @@ export const ChatInput: React.FC = () => {
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}
-          placeholder={isListening ? "Listening... Speak now..." : "Type your message..."}
+          placeholder={isUnderMaintenance ? "Fitur AnimateX sedang maintenance..." : isListening ? "Listening... Speak now..." : "Type your message..."}
           rows={1}
-          disabled={loading || !!streamingMessageId}
+          disabled={loading || !!streamingMessageId || isUnderMaintenance}
           className={`chat-textarea ${isListening ? 'listening-placeholder' : ''}`}
         />
 
@@ -301,9 +322,9 @@ export const ChatInput: React.FC = () => {
         <button
           type="button"
           onClick={toggleListening}
-          disabled={loading || !!streamingMessageId}
+          disabled={loading || !!streamingMessageId || isUnderMaintenance}
           className={`mic-btn ${isListening ? 'listening' : ''}`}
-          title={isListening ? "Listening... Click to stop" : "Dictate message (Speech-to-Text)"}
+          title={isUnderMaintenance ? "Maintenance Mode" : isListening ? "Listening... Click to stop" : "Dictate message (Speech-to-Text)"}
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className={isListening ? "pulse-mic-icon" : ""}>
             <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
