@@ -692,11 +692,21 @@ export const ChatArea: React.FC = () => {
                               const videoUrl = msg.attachmentUrl.startsWith('http') ? msg.attachmentUrl : `${BASE_URL}${msg.attachmentUrl}`;
                               return (
                                 <>
-                                  {!msg.attachmentUrl.toLowerCase().endsWith('.mp4') ? (
-                                    <CinematicVideoPlayer src={videoUrl} />
-                                  ) : (
-                                    <video src={videoUrl} controls className="message-attachment-video" />
-                                  )}
+                                  {(() => {
+                                    const lowerUrl = msg.attachmentUrl!.toLowerCase();
+                                    const isFallbackSimulation = 
+                                      lowerUrl.endsWith('.png') ||
+                                      lowerUrl.endsWith('.jpg') ||
+                                      lowerUrl.endsWith('.jpeg') ||
+                                      lowerUrl.endsWith('.webp') ||
+                                      lowerUrl.endsWith('.gif') ||
+                                      lowerUrl.includes('/uploads/');
+                                    return isFallbackSimulation ? (
+                                      <CinematicVideoPlayer src={videoUrl} />
+                                    ) : (
+                                      <video src={videoUrl} controls className="message-attachment-video" />
+                                    );
+                                  })()}
                                   <div className="video-action-bar">
                                     <button type="button" className="video-action-btn" onClick={() => handleDownloadVideo(videoUrl, 'garionx_video.mp4')} title="Download Video">
                                       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
