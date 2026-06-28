@@ -1067,3 +1067,35 @@
   white-space: nowrap;
 }
 
+/* Video Action Bar & Buttons */
+.video-action-bar {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  justify-content: flex-start;
+  width: 100%;
+  max-width: 480px;
+}
+
+.video-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.video-action-btn:hover {
+  color: var(--accent-secondary);
+  border-color: var(--accent-secondary);
+  background: rgba(0, 217, 255, 0.04);
+  box-shadow: 0 0 8px rgba(0, 217, 255, 0.15);
+}
+

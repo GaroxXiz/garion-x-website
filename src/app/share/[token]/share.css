@@ -169,3 +169,232 @@
     font-size: 1.4rem;
   }
 }
+
+/* ── Cinematic Video Player & Action Bar for Share Page ── */
+.cinematic-video-container {
+  width: 100%;
+  max-width: 480px;
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--border-color);
+  background-color: #030307;
+  overflow: hidden;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4), 0 0 20px rgba(0, 217, 255, 0.1);
+  margin: 12px 0;
+}
+
+.cinematic-video-viewport {
+  width: 100%;
+  height: 270px;
+  position: relative;
+  overflow: hidden;
+  background-color: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.cinematic-video-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.1s linear;
+}
+
+/* Ken burns animation when playing */
+.cinematic-video-viewport.playing .cinematic-video-image {
+  animation: cinematicAnimate 6s infinite ease-in-out;
+}
+
+@keyframes cinematicAnimate {
+  0% {
+    transform: scale(1) translate(0, 0);
+    filter: brightness(1) contrast(1);
+  }
+  50% {
+    transform: scale(1.08) translate(-1%, -0.5%);
+    filter: brightness(1.15) contrast(1.05);
+  }
+  100% {
+    transform: scale(1) translate(0, 0);
+    filter: brightness(1) contrast(1);
+  }
+}
+
+/* Light leaks overlay */
+.cinematic-overlay-lightleak {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at 20% 30%, rgba(0, 217, 255, 0.15) 0%, transparent 60%),
+              radial-gradient(circle at 80% 70%, rgba(139, 92, 246, 0.15) 0%, transparent 60%);
+  mix-blend-mode: screen;
+}
+
+.cinematic-video-viewport.playing .cinematic-overlay-lightleak {
+  animation: dynamicLightLeak 8s infinite alternate ease-in-out;
+}
+
+@keyframes dynamicLightLeak {
+  0% {
+    opacity: 0.4;
+    filter: hue-rotate(0deg);
+  }
+  50% {
+    opacity: 0.8;
+    filter: hue-rotate(90deg);
+  }
+  100% {
+    opacity: 0.4;
+    filter: hue-rotate(180deg);
+  }
+}
+
+/* Scanline / Grid overlay */
+.cinematic-overlay-grid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
+              linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+  background-size: 100% 4px, 6px 100%;
+  opacity: 0.4;
+}
+
+/* Floating dust particles simulation */
+.cinematic-overlay-particles {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.15) 1px, transparent 1px);
+  background-size: 32px 32px;
+  opacity: 0.3;
+}
+
+.cinematic-video-viewport.playing .cinematic-overlay-particles {
+  animation: particlesMove 10s infinite linear;
+}
+
+@keyframes particlesMove {
+  from { background-position: 0 0; }
+  to { background-position: 32px -64px; }
+}
+
+/* Play center button */
+.cinematic-play-center-btn {
+  position: absolute;
+  background: rgba(0, 0, 0, 0.6);
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  color: #fff;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+
+.cinematic-play-center-btn:hover {
+  transform: scale(1.1);
+  background: rgba(0, 217, 255, 0.2);
+  border-color: var(--accent-secondary);
+  color: var(--accent-secondary);
+  box-shadow: 0 0 20px rgba(0, 217, 255, 0.4);
+}
+
+/* Controls Bar styling */
+.cinematic-video-controls {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  background-color: #0a0a12;
+  border-top: 1px solid var(--border-color);
+  gap: 12px;
+}
+
+.cinematic-control-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-smooth);
+  padding: 4px;
+}
+
+.cinematic-control-btn:hover {
+  color: var(--accent-secondary);
+  text-shadow: 0 0 8px rgba(0, 217, 255, 0.4);
+}
+
+/* Progress bar track */
+.cinematic-progress-bar-container {
+  flex: 1;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  position: relative;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.cinematic-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+  border-radius: 3px;
+  width: 0;
+  box-shadow: 0 0 8px var(--accent-secondary);
+}
+
+.cinematic-timecode {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  font-family: var(--font-geist-mono), monospace;
+  white-space: nowrap;
+}
+
+.video-action-bar {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  justify-content: flex-start;
+  width: 100%;
+  max-width: 480px;
+}
+
+.video-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.video-action-btn:hover {
+  color: var(--accent-secondary);
+  border-color: var(--accent-secondary);
+  background: rgba(0, 217, 255, 0.04);
+  box-shadow: 0 0 8px rgba(0, 217, 255, 0.15);
+}

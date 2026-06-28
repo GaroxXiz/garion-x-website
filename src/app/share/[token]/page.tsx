@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { apiDataSource } from '../../../data/datasources/chat-api-datasource';
+import React, { useEffect, useState, useRef } from 'react';
+import { apiDataSource, BASE_URL } from '../../../data/datasources/chat-api-datasource';
 import { Logo } from '../../../presentation/components/logo/Logo';
 import './share.css';
 
@@ -10,6 +10,8 @@ interface Message {
   sender: 'user' | 'assistant';
   content: string;
   createdAt: string;
+  attachmentUrl?: string;
+  attachmentType?: string;
 }
 
 interface SharedChatData {
@@ -20,10 +22,118 @@ interface SharedChatData {
   messages: Message[];
 }
 
+// Cinematic Image-to-Video Player for AnimateX simulation on share page
+const CinematicVideoPlayer: React.FC<{ src: string }> = ({ src }) => {
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [progress, setProgress] = useState(0);
+  const progressIntervalRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (isPlaying) {
+      progressIntervalRef.current = setInterval(() => {
+        setProgress((prev) => {
+          if (prev >= 100) return 0;
+          return prev + 1;
+        });
+      }, 50);
+    } else {
+      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+    }
+    return () => {
+      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+    };
+  }, [isPlaying]);
+
+  const handleTimelineClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const percentage = (clickX / rect.width) * 100;
+    setProgress(percentage);
+  };
+
+  return (
+    <div className="cinematic-video-container">
+      {/* Animated Image */}
+      <div className={`cinematic-video-viewport ${isPlaying ? 'playing' : 'paused'}`} onClick={() => setIsPlaying(!isPlaying)}>
+        <img src={src} className="cinematic-video-image" alt="Animated AI Output" />
+        
+        {/* Cinematic VFX Overlays */}
+        <div className="cinematic-overlay-lightleak" />
+        <div className="cinematic-overlay-grid" />
+        <div className="cinematic-overlay-particles" />
+        
+        {/* Play Button Overlay when Paused */}
+        {!isPlaying && (
+          <div className="cinematic-play-center-btn">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+          </div>
+        )}
+      </div>
+
+      {/* Control Bar */}
+      <div className="cinematic-video-controls">
+        <button type="button" className="cinematic-control-btn" onClick={() => setIsPlaying(!isPlaying)}>
+          {isPlaying ? (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <rect x="6" y="4" width="4" height="16"></rect>
+              <rect x="14" y="4" width="4" height="16"></rect>
+            </svg>
+          ) : (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+          )}
+        </button>
+        
+        {/* Progress Timeline */}
+        <div className="cinematic-progress-bar-container" onClick={handleTimelineClick}>
+          <div className="cinematic-progress-fill" style={{ width: `${progress}%` }}></div>
+        </div>
+
+        {/* Timecode */}
+        <span className="cinematic-timecode">
+          0:0{Math.floor((progress / 100) * 5)} / 0:05
+        </span>
+      </div>
+    </div>
+  );
+};
+
 export default function SharedChatPage({ params }: { params: Promise<{ token: string }> | { token: string } }) {
   const [data, setData] = useState<SharedChatData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Video Action Handlers
+  const handleDownloadVideo = (url: string, filename: string) => {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename || 'garionx_video.mp4';
+    a.target = '_blank';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
+  const handleCopyVideoLink = (url: string) => {
+    navigator.clipboard.writeText(url);
+    alert('Video link copied to clipboard!');
+  };
+
+  const handleShareVideo = (url: string) => {
+    if (navigator.share) {
+      navigator.share({
+        title: 'GarionX Animated Video',
+        text: 'Lihat video animasi siber hasil AI GarionX ini!',
+        url: url
+      }).catch(err => console.error(err));
+    } else {
+      navigator.clipboard.writeText(url);
+      alert('Video link copied to clipboard!');
+    }
+  };
 
   // Helper to parse bold (**text**) and italics (*text*)
   const parseMarkdownText = (text: string) => {
@@ -232,6 +342,15 @@ export default function SharedChatPage({ params }: { params: Promise<{ token: st
           <div className="messages-list">
             {data.messages.map((msg) => {
               const isUser = msg.sender === 'user';
+              
+              const getYoutubeEmbedUrl = (url: string) => {
+                const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+                const match = url.match(regExp);
+                return (match && match[2].length === 11)
+                  ? `https://www.youtube.com/embed/${match[2]}`
+                  : null;
+              };
+
               return (
                 <div key={msg.id} className={`message-row ${isUser ? 'user-row' : 'bot-row'}`}>
                   <div className={`message-bubble ${isUser ? 'user-bubble' : 'bot-bubble'}`}>
@@ -240,6 +359,67 @@ export default function SharedChatPage({ params }: { params: Promise<{ token: st
                         {data.personalityName[0] || 'G'}
                       </div>
                     )}
+                    
+                    {msg.attachmentUrl && (
+                      <div className="message-attachment-container">
+                        {msg.attachmentType === 'video' ? (
+                          <div className="message-attachment-video-wrapper" style={{ border: 'none', background: 'transparent', boxShadow: 'none' }}>
+                            {getYoutubeEmbedUrl(msg.attachmentUrl) ? (
+                              <iframe
+                                src={getYoutubeEmbedUrl(msg.attachmentUrl)!}
+                                title="YouTube video player"
+                                frameBorder="0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                allowFullScreen
+                                className="message-attachment-video"
+                                style={{ border: 'none', aspectRatio: '16/9', height: '220px', width: '100%', maxWidth: '100%' }}
+                              />
+                            ) : (() => {
+                              const videoUrl = msg.attachmentUrl!.startsWith('http') ? msg.attachmentUrl! : `${BASE_URL}${msg.attachmentUrl}`;
+                              return (
+                                <>
+                                  {!msg.attachmentUrl!.toLowerCase().endsWith('.mp4') ? (
+                                    <CinematicVideoPlayer src={videoUrl} />
+                                  ) : (
+                                    <video src={videoUrl} controls className="message-attachment-video" />
+                                  )}
+                                  <div className="video-action-bar">
+                                    <button type="button" className="video-action-btn" onClick={() => handleDownloadVideo(videoUrl, 'garionx_video.mp4')} title="Download Video">
+                                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                                      </svg>
+                                      <span>Save</span>
+                                    </button>
+                                    <button type="button" className="video-action-btn" onClick={() => handleCopyVideoLink(videoUrl)} title="Copy Video Link">
+                                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                      </svg>
+                                      <span>Copy Link</span>
+                                    </button>
+                                    <button type="button" className="video-action-btn" onClick={() => handleShareVideo(videoUrl)} title="Share Video Link">
+                                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                        <circle cx="18" cy="5" r="3"></circle>
+                                        <circle cx="6" cy="12" r="3"></circle>
+                                        <circle cx="18" cy="19" r="3"></circle>
+                                        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                                        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                                      </svg>
+                                      <span>Share</span>
+                                    </button>
+                                  </div>
+                                </>
+                              );
+                            })()}
+                          </div>
+                        ) : (
+                          <div className="message-attachment-image-wrapper">
+                            <img src={msg.attachmentUrl!.startsWith('http') ? msg.attachmentUrl! : `${BASE_URL}${msg.attachmentUrl}`} alt="Attachment" className="message-attachment-image" />
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     <div className="message-content">
                       {renderMessageContent(msg.content)}
                     </div>
