@@ -16,7 +16,8 @@ export const ChatArea: React.FC = () => {
     setSidebarOpen,
     personalities,
     shareChat,
-    regenerateLastResponse
+    regenerateLastResponse,
+    selectedPersonalityId
   } = useChat();
 
   const [showExportOptions, setShowExportOptions] = useState(false);
@@ -701,10 +702,17 @@ export const ChatArea: React.FC = () => {
                   <div className="bot-avatar-label">
                     {currentPersonality ? currentPersonality.name[0] : 'G'}
                   </div>
-                  <div className="typing-indicator">
-                    <span className="dot animate-dot-1"></span>
-                    <span className="dot animate-dot-2"></span>
-                    <span className="dot animate-dot-3"></span>
+                  <div className="typing-indicator-wrapper">
+                    <div className="typing-indicator">
+                      <span className="dot animate-dot-1"></span>
+                      <span className="dot animate-dot-2"></span>
+                      <span className="dot animate-dot-3"></span>
+                    </div>
+                    <span className="loading-status-text">
+                      {((activeChat?.personalityId === 'video_generator') || (selectedPersonalityId === 'video_generator'))
+                        ? "Sedang membuat animasi..."
+                        : "Sedang berpikir..."}
+                    </span>
                   </div>
                 </div>
               </div>
