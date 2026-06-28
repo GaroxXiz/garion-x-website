@@ -17,7 +17,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
   const [avatarLoading, setAvatarLoading] = useState(false);
   const [profileLoading, setProfileLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [activeTheme, setActiveTheme] = useState<'blue' | 'pink' | 'green' | 'amber'>('blue');
+  const [activeTheme, setActiveTheme] = useState<'dark' | 'amoled' | 'cyberpunk' | 'light'>('dark');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -31,12 +31,12 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
     }
   }, [isOpen]);
 
-  const handleThemeChange = (theme: 'blue' | 'pink' | 'green' | 'amber') => {
+  const handleThemeChange = (theme: 'dark' | 'amoled' | 'cyberpunk' | 'light') => {
     setActiveTheme(theme);
     if (typeof window === 'undefined') return;
     localStorage.setItem('garionx_theme', theme);
-    document.documentElement.classList.remove('theme-pink', 'theme-green', 'theme-amber');
-    if (theme !== 'blue') {
+    document.documentElement.classList.remove('theme-amoled', 'theme-cyberpunk', 'theme-light');
+    if (theme !== 'dark') {
       document.documentElement.classList.add('theme-' + theme);
     }
   };
@@ -173,39 +173,39 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
               <div className="theme-options-grid">
                 <button
                   type="button"
-                  className={`theme-option-btn theme-blue ${activeTheme === 'blue' ? 'active' : ''}`}
-                  onClick={() => handleThemeChange('blue')}
-                  title="Default Cyber Blue"
+                  className={`theme-option-btn theme-dark ${activeTheme === 'dark' ? 'active' : ''}`}
+                  onClick={() => handleThemeChange('dark')}
+                  title="Sleek Cyber Dark Mode"
                 >
-                  <span className="theme-color-preview preview-blue"></span>
-                  <span className="theme-name-text">Cyber Blue</span>
+                  <span className="theme-color-preview preview-dark"></span>
+                  <span className="theme-name-text">Sleek Dark</span>
                 </button>
                 <button
                   type="button"
-                  className={`theme-option-btn theme-pink ${activeTheme === 'pink' ? 'active' : ''}`}
-                  onClick={() => handleThemeChange('pink')}
-                  title="Outrun Neon Pink"
+                  className={`theme-option-btn theme-amoled ${activeTheme === 'amoled' ? 'active' : ''}`}
+                  onClick={() => handleThemeChange('amoled')}
+                  title="AMOLED Jet Black"
                 >
-                  <span className="theme-color-preview preview-pink"></span>
-                  <span className="theme-name-text">Neon Pink</span>
+                  <span className="theme-color-preview preview-amoled"></span>
+                  <span className="theme-name-text">Amoled Black</span>
                 </button>
                 <button
                   type="button"
-                  className={`theme-option-btn theme-green ${activeTheme === 'green' ? 'active' : ''}`}
-                  onClick={() => handleThemeChange('green')}
-                  title="Matrix Acid Green"
+                  className={`theme-option-btn theme-cyberpunk ${activeTheme === 'cyberpunk' ? 'active' : ''}`}
+                  onClick={() => handleThemeChange('cyberpunk')}
+                  title="Cyberpunk Green/Pink"
                 >
-                  <span className="theme-color-preview preview-green"></span>
-                  <span className="theme-name-text">Acid Green</span>
+                  <span className="theme-color-preview preview-cyberpunk"></span>
+                  <span className="theme-name-text">Cyberpunk</span>
                 </button>
                 <button
                   type="button"
-                  className={`theme-option-btn theme-amber ${activeTheme === 'amber' ? 'active' : ''}`}
-                  onClick={() => handleThemeChange('amber')}
-                  title="Industrial Retro Amber"
+                  className={`theme-option-btn theme-light ${activeTheme === 'light' ? 'active' : ''}`}
+                  onClick={() => handleThemeChange('light')}
+                  title="Clean Light Mode"
                 >
-                  <span className="theme-color-preview preview-amber"></span>
-                  <span className="theme-name-text">Retro Amber</span>
+                  <span className="theme-color-preview preview-light"></span>
+                  <span className="theme-name-text">Clean Light</span>
                 </button>
               </div>
             </div>

@@ -32,7 +32,7 @@ export default function RootLayout({
               (function() {
                 try {
                   const savedTheme = localStorage.getItem('garionx_theme');
-                  if (savedTheme && savedTheme !== 'blue') {
+                  if (savedTheme && savedTheme !== 'dark' && savedTheme !== 'blue') {
                     document.documentElement.classList.add('theme-' + savedTheme);
                   }
                 } catch (e) {

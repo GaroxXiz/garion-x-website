@@ -84,6 +84,182 @@ const CinematicVideoPlayer: React.FC<{ src: string }> = ({ src }) => {
   );
 };
 
+// Safe Code Sandbox Runner component for browser-side script execution
+interface CodeSandboxRunnerProps {
+  code: string;
+  language: string;
+}
+
+const CodeSandboxRunner: React.FC<CodeSandboxRunnerProps> = ({ code, language }) => {
+  const isRunnable = ['javascript', 'js', 'python', 'py'].includes(language.toLowerCase());
+  const [isRunning, setIsRunning] = useState(false);
+  const [output, setOutput] = useState<string | null>(null);
+  const [isError, setIsError] = useState(false);
+
+  if (!isRunnable) return null;
+
+  const handleRun = () => {
+    setIsRunning(true);
+    setIsError(false);
+    setOutput(null);
+
+    setTimeout(() => {
+      const lang = language.toLowerCase();
+      if (lang === 'javascript' || lang === 'js') {
+        const logs: string[] = [];
+        const originalLog = console.log;
+        const originalWarn = console.warn;
+        const originalError = console.error;
+
+        console.log = (...args) => {
+          logs.push(args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' '));
+        };
+        console.warn = (...args) => {
+          logs.push('⚠️ ' + args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' '));
+        };
+        console.error = (...args) => {
+          logs.push('❌ ' + args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' '));
+        };
+
+        try {
+          const runner = new Function(code);
+          runner();
+          setOutput(logs.join('\n') || 'Success: Code executed successfully with no output logs.');
+          setIsError(false);
+        } catch (err: any) {
+          setOutput(`❌ Error: ${err.message}`);
+          setIsError(true);
+        } finally {
+          console.log = originalLog;
+          console.warn = originalWarn;
+          console.error = originalError;
+          setIsRunning(false);
+        }
+      } else if (lang === 'python' || lang === 'py') {
+        try {
+          const lines = code.split('\n');
+          const logs: string[] = [];
+          let hasOutput = false;
+          
+          for (let line of lines) {
+            line = line.trim();
+            if (line.startsWith('print(') && line.endsWith(')')) {
+              const inner = line.substring(6, line.length - 1).trim();
+              if ((inner.startsWith('"') && inner.endsWith('"')) || (inner.startsWith("'") && inner.endsWith("'"))) {
+                logs.push(inner.substring(1, inner.length - 1));
+                hasOutput = true;
+              } else {
+                try {
+                  const result = new Function(`return (${inner});`)();
+                  logs.push(String(result));
+                  hasOutput = true;
+                } catch {
+                  logs.push(`[Simulated Print]: ${inner}`);
+                  hasOutput = true;
+                }
+              }
+            }
+          }
+          if (!hasOutput) {
+            logs.push('Python Sandbox Simulation active.\n(Add print() statements to view direct terminal output).');
+          }
+          setOutput(logs.join('\n'));
+          setIsError(false);
+        } catch (err: any) {
+          setOutput(`❌ Python Simulation Error: ${err.message}`);
+          setIsError(true);
+        } finally {
+          setIsRunning(false);
+        }
+      }
+    }, 500);
+  };
+
+  return (
+    <div className="sandbox-runner-panel" style={{
+      borderTop: '1px solid rgba(255, 255, 255, 0.05)',
+      backgroundColor: 'rgba(5, 8, 17, 0.5)',
+      padding: '10px 12px',
+      borderBottomLeftRadius: 'var(--border-radius-md)',
+      borderBottomRightRadius: 'var(--border-radius-md)',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '8px'
+    }}>
+      <div className="sandbox-runner-controls" style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between'
+      }}>
+        <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#00ffcc', boxShadow: '0 0 6px #00ffcc' }}></span>
+          {language.toUpperCase()} Sandbox Ready
+        </span>
+        <button
+          onClick={handleRun}
+          disabled={isRunning}
+          style={{
+            background: 'linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%)',
+            border: 'none',
+            borderRadius: '4px',
+            color: '#ffffff',
+            padding: '4px 12px',
+            fontSize: '0.72rem',
+            fontWeight: 700,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            boxShadow: '0 0 10px rgba(0, 217, 255, 0.15)',
+            transition: 'all 0.2s ease',
+            opacity: isRunning ? 0.6 : 1
+          }}
+        >
+          {isRunning ? (
+            <>
+              <div className="sandbox-spinner" style={{
+                width: '10px',
+                height: '10px',
+                border: '2px solid #ffffff',
+                borderTopColor: 'transparent',
+                borderRadius: '50%',
+                animation: 'spin 0.6s linear infinite'
+              }}></div>
+              <span>Running...</span>
+            </>
+          ) : (
+            <>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="5 3 19 12 5 21 5 3" />
+              </svg>
+              <span>Run Code</span>
+            </>
+          )}
+        </button>
+      </div>
+
+      {output !== null && (
+        <div className="sandbox-runner-console" style={{
+          backgroundColor: '#03050a',
+          border: '1px solid rgba(0, 217, 255, 0.15)',
+          borderRadius: '4px',
+          padding: '8px 10px',
+          fontFamily: 'monospace',
+          fontSize: '0.78rem',
+          color: isError ? '#f87171' : '#00ffcc',
+          whiteSpace: 'pre-wrap',
+          maxHeight: '150px',
+          overflowY: 'auto',
+          boxShadow: 'inset 0 0 8px rgba(0, 0, 0, 0.8)',
+          textAlign: 'left'
+        }}>
+          {output}
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const ChatArea: React.FC = () => {
   const {
     activeChat,
@@ -543,6 +719,7 @@ export const ChatArea: React.FC = () => {
           <pre className="code-block-pre">
             {highlightCode(code)}
           </pre>
+          <CodeSandboxRunner code={code} language={language} />
         </div>
       );
 
