@@ -43,6 +43,8 @@ interface ChatContextType {
   uploadFile: (file: File) => Promise<{ url: string; type: string }>;
   login: (email: string, password: string) => Promise<void>;
   register: (username: string, password: string, email: string, name: string) => Promise<void>;
+  sendOtp: (email: string) => Promise<any>;
+  verifyOtp: (email: string, otp: string) => Promise<void>;
   loginWithGoogle: () => void; // Will trigger modal opening
   logout: () => void;
   getProfile: () => Promise<void>;
@@ -327,6 +329,34 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const sendOtp = async (email: string) => {
+    try {
+      const response = await apiDataSource.sendOtp(email);
+      return response;
+    } catch (e: any) {
+      throw new Error(e.message || 'Failed to send OTP code.');
+    }
+  };
+
+  const verifyOtp = async (email: string, otp: string) => {
+    try {
+      const response = await apiDataSource.verifyOtp(email, otp);
+      const { token, ...profile } = response;
+
+      localStorage.setItem('garionx_token', token);
+      localStorage.setItem('garionx_user', JSON.stringify(profile));
+
+      setUser(profile);
+      setAuthModalOpen(false);
+
+      // Load user specific chats
+      const chatList = await usecases.getChats.execute();
+      setChats(chatList);
+    } catch (e: any) {
+      throw new Error(e.message || 'OTP verification failed.');
+    }
+  };
+
   const getProfile = async () => {
     try {
       const response = await apiDataSource.getProfile();
@@ -532,6 +562,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         uploadFile,
         login,
         register,
+        sendOtp,
+        verifyOtp,
         loginWithGoogle,
         logout,
         getProfile,

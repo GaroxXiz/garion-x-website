@@ -3,12 +3,12 @@ import { useChat } from '../../context/chat-context';
 import './AuthModal.css';
 
 export const AuthModal: React.FC = () => {
-  const { isAuthModalOpen, setAuthModalOpen, login, register } = useChat();
+  const { isAuthModalOpen, setAuthModalOpen, sendOtp, verifyOtp } = useChat();
   const [isLoginTab, setIsLoginTab] = useState(true);
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
+  const [otp, setOtp] = useState('');
+  const [isOtpSent, setIsOtpSent] = useState(false);
   
   const [loadingState, setLoadingState] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -18,10 +18,10 @@ export const AuthModal: React.FC = () => {
   const handleClose = () => {
     setAuthModalOpen(false);
     setErrorMsg(null);
-    setUsername('');
-    setPassword('');
     setEmail('');
     setName('');
+    setOtp('');
+    setIsOtpSent(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -30,12 +30,19 @@ export const AuthModal: React.FC = () => {
     setLoadingState(true);
 
     try {
-      if (isLoginTab) {
-        await login(username, password);
+      if (!isOtpSent) {
+        // Stage 1: Send OTP to Email
+        const res = await sendOtp(email);
+        setIsOtpSent(true);
+        // Show alert containing mock OTP for testing
+        if (res && res.otp) {
+          alert(`[MOCK EMAIL SERVICE] OTP Code sent: ${res.otp}`);
+        }
       } else {
-        await register(username, password, email, name);
+        // Stage 2: Verify OTP
+        await verifyOtp(email, otp);
+        handleClose();
       }
-      handleClose();
     } catch (err: any) {
       setErrorMsg(err.message || 'Authentication failed. Please try again.');
     } finally {
@@ -55,31 +62,37 @@ export const AuthModal: React.FC = () => {
         </button>
 
         {/* Tab Headers */}
-        <div className="modal-tabs">
-          <button
-            className={`tab-btn ${isLoginTab ? 'active' : ''}`}
-            onClick={() => {
-              setIsLoginTab(true);
-              setErrorMsg(null);
-            }}
-          >
-            Sign In
-          </button>
-          <button
-            className={`tab-btn ${!isLoginTab ? 'active' : ''}`}
-            onClick={() => {
-              setIsLoginTab(false);
-              setErrorMsg(null);
-            }}
-          >
-            Register
-          </button>
-        </div>
+        {!isOtpSent && (
+          <div className="modal-tabs">
+            <button
+              className={`tab-btn ${isLoginTab ? 'active' : ''}`}
+              onClick={() => {
+                setIsLoginTab(true);
+                setErrorMsg(null);
+              }}
+            >
+              Sign In
+            </button>
+            <button
+              className={`tab-btn ${!isLoginTab ? 'active' : ''}`}
+              onClick={() => {
+                setIsLoginTab(false);
+                setErrorMsg(null);
+              }}
+            >
+              Register
+            </button>
+          </div>
+        )}
 
         {/* Brand Banner */}
         <div className="modal-brand">
           <h2>GarionX Terminal</h2>
-          <p>{isLoginTab ? 'Enter credentials to authorize session' : 'Create new cybernetic profile credentials'}</p>
+          <p>
+            {isOtpSent 
+              ? 'Enter security authorization code' 
+              : (isLoginTab ? 'Request OTP code to authorize session' : 'Register a new profile via Email OTP')}
+          </p>
         </div>
 
         {/* Error Message */}
@@ -87,34 +100,8 @@ export const AuthModal: React.FC = () => {
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="modal-form">
-          <div className="form-group">
-            <label htmlFor="username">{isLoginTab ? 'Email Address' : 'Username'}</label>
-            <input
-              type={isLoginTab ? 'email' : 'text'}
-              id="username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder={isLoginTab ? 'e.g. user.gabut@gmail.com' : 'e.g. user_gabut'}
-              required
-              disabled={loadingState}
-            />
-          </div>
-
-          {!isLoginTab && (
+          {!isOtpSent ? (
             <>
-              <div className="form-group">
-                <label htmlFor="name">Full Name</label>
-                <input
-                  type="text"
-                  id="name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. User Gabut"
-                  required
-                  disabled={loadingState}
-                />
-              </div>
-
               <div className="form-group">
                 <label htmlFor="email">Email Address</label>
                 <input
@@ -127,27 +114,62 @@ export const AuthModal: React.FC = () => {
                   disabled={loadingState}
                 />
               </div>
+
+              {!isLoginTab && (
+                <div className="form-group">
+                  <label htmlFor="name">Full Name</label>
+                  <input
+                    type="text"
+                    id="name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="e.g. User Gabut"
+                    required
+                    disabled={loadingState}
+                  />
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <div className="form-group">
+                <label htmlFor="otp">Enter 6-Digit OTP Code</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <input
+                    type="text"
+                    id="otp"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').substring(0, 6))}
+                    placeholder="••••••"
+                    required
+                    disabled={loadingState}
+                    style={{ textAlign: 'center', letterSpacing: '8px', fontSize: '1.2rem', fontWeight: 'bold' }}
+                  />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', marginTop: '4px' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>Sent to: <strong>{email}</strong></span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsOtpSent(false);
+                        setOtp('');
+                      }}
+                      style={{ background: 'transparent', border: 'none', color: '#00ffcc', cursor: 'pointer', fontWeight: 600 }}
+                    >
+                      Change Email
+                    </button>
+                  </div>
+                </div>
+              </div>
             </>
           )}
-
-          <div className="form-group">
-            <label htmlFor="password">Password</label>
-            <input
-              type="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              required
-              disabled={loadingState}
-            />
-          </div>
 
           <button type="submit" className="submit-auth-btn glow-effect" disabled={loadingState}>
             {loadingState ? (
               <div className="auth-spinner"></div>
             ) : (
-              <span>{isLoginTab ? 'Sign In Session' : 'Create Profile'}</span>
+              <span>
+                {!isOtpSent ? 'Send OTP Code' : 'Verify & Sign In'}
+              </span>
             )}
           </button>
         </form>

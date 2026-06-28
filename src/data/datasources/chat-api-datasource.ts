@@ -163,6 +163,32 @@ export class ChatApiDataSource {
     return response.json();
   }
 
+  async sendOtp(email: string): Promise<any> {
+    const response = await fetch(`${BASE_URL}/api/auth/send-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    if (!response.ok) {
+      const errorMsg = await response.text();
+      throw new Error(errorMsg || 'Failed to send OTP');
+    }
+    return response.json();
+  }
+
+  async verifyOtp(email: string, otp: string): Promise<any> {
+    const response = await fetch(`${BASE_URL}/api/auth/verify-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, otp }),
+    });
+    if (!response.ok) {
+      const errorMsg = await response.text();
+      throw new Error(errorMsg || 'Invalid or expired OTP');
+    }
+    return response.json();
+  }
+
   async login(email: string, password: string): Promise<any> {
     const response = await fetch(`${BASE_URL}/api/auth/login`, {
       method: 'POST',
