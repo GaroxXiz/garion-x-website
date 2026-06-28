@@ -5,6 +5,85 @@ import { ChatInput } from '../chat-input/ChatInput';
 import { BASE_URL } from '../../../data/datasources/chat-api-datasource';
 import './ChatArea.css';
 
+// Cinematic Image-to-Video Player for AnimateX simulation
+const CinematicVideoPlayer: React.FC<{ src: string }> = ({ src }) => {
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [progress, setProgress] = useState(0);
+  const progressIntervalRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (isPlaying) {
+      progressIntervalRef.current = setInterval(() => {
+        setProgress((prev) => {
+          if (prev >= 100) return 0;
+          return prev + 1;
+        });
+      }, 50);
+    } else {
+      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+    }
+    return () => {
+      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+    };
+  }, [isPlaying]);
+
+  const handleTimelineClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const percentage = (clickX / rect.width) * 100;
+    setProgress(percentage);
+  };
+
+  return (
+    <div className="cinematic-video-container">
+      {/* Animated Image */}
+      <div className={`cinematic-video-viewport ${isPlaying ? 'playing' : 'paused'}`} onClick={() => setIsPlaying(!isPlaying)}>
+        <img src={src} className="cinematic-video-image" alt="Animated AI Output" />
+        
+        {/* Cinematic VFX Overlays */}
+        <div className="cinematic-overlay-lightleak" />
+        <div className="cinematic-overlay-grid" />
+        <div className="cinematic-overlay-particles" />
+        
+        {/* Play Button Overlay when Paused */}
+        {!isPlaying && (
+          <div className="cinematic-play-center-btn">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+          </div>
+        )}
+      </div>
+
+      {/* Control Bar */}
+      <div className="cinematic-video-controls">
+        <button type="button" className="cinematic-control-btn" onClick={() => setIsPlaying(!isPlaying)}>
+          {isPlaying ? (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <rect x="6" y="4" width="4" height="16"></rect>
+              <rect x="14" y="4" width="4" height="16"></rect>
+            </svg>
+          ) : (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+          )}
+        </button>
+        
+        {/* Progress Timeline */}
+        <div className="cinematic-progress-bar-container" onClick={handleTimelineClick}>
+          <div className="cinematic-progress-fill" style={{ width: `${progress}%` }}></div>
+        </div>
+
+        {/* Timecode */}
+        <span className="cinematic-timecode">
+          0:0{Math.floor((progress / 100) * 5)} / 0:05
+        </span>
+      </div>
+    </div>
+  );
+};
+
 export const ChatArea: React.FC = () => {
   const {
     activeChat,
@@ -569,7 +648,7 @@ export const ChatArea: React.FC = () => {
                     {msg.attachmentUrl && (
                       <div className="message-attachment-container">
                         {msg.attachmentType === 'video' ? (
-                          <div className="message-attachment-video-wrapper">
+                          <div className="message-attachment-video-wrapper" style={{ border: 'none', background: 'transparent', boxShadow: 'none' }}>
                             {getYoutubeEmbedUrl(msg.attachmentUrl) ? (
                               <iframe
                                 src={getYoutubeEmbedUrl(msg.attachmentUrl)!}
@@ -580,6 +659,8 @@ export const ChatArea: React.FC = () => {
                                 className="message-attachment-video"
                                 style={{ border: 'none', aspectRatio: '16/9', height: '220px', width: '100%', maxWidth: '100%' }}
                               />
+                            ) : !msg.attachmentUrl.toLowerCase().endsWith('.mp4') ? (
+                              <CinematicVideoPlayer src={msg.attachmentUrl.startsWith('http') ? msg.attachmentUrl : `${BASE_URL}${msg.attachmentUrl}`} />
                             ) : (
                               <video src={msg.attachmentUrl.startsWith('http') ? msg.attachmentUrl : `${BASE_URL}${msg.attachmentUrl}`} controls className="message-attachment-video" />
                             )}
