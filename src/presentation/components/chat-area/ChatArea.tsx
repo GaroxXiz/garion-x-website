@@ -189,7 +189,7 @@ export const ChatArea: React.FC = () => {
     setShowExportOptions(false);
   };
 
-  // Helper to parse images (![alt](url)), bold (**text**) and italics (*text*)
+  // Helper to parse images (![alt](url)), links ([text](url)), bold (**text**), italics (*text*), and inline code (`code`)
   const parseMarkdownText = (text: string) => {
     let escaped = text
       .replace(/&/g, '&amp;')
@@ -198,39 +198,30 @@ export const ChatArea: React.FC = () => {
     
     // Parse images: ![alt](url)
     escaped = escaped.replace(/!\[(.*?)\]\((.*?)\)/g, '<img src="$2" alt="$1" class="chat-image" />');
+    // Parse links: [text](url)
+    escaped = escaped.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="markdown-link">$1</a>');
     // Parse bold (**text**)
     escaped = escaped.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
     // Parse italics (*text*)
     escaped = escaped.replace(/\*(.*?)\*/g, '<em>$1</em>');
+    // Parse inline code (`code`)
+    escaped = escaped.replace(/`([^`]+)`/g, '<code class="markdown-inline-code">$1</code>');
     
     return <span dangerouslySetInnerHTML={{ __html: escaped }} />;
   };
 
-  // Helper to render lists and paragraphs
-  const renderParagraphsLine = (line: string, idx: number) => {
-    if (line.trim().startsWith('- ') || line.trim().startsWith('* ')) {
-      return <li key={idx} className="list-item">{parseMarkdownText(line.substring(2))}</li>;
-    }
-    if (/^\d+\.\s/.test(line.trim())) {
-      const dotIndex = line.indexOf('.');
-      return <li key={idx} className="list-item decimal">{parseMarkdownText(line.substring(dotIndex + 1).trim())}</li>;
-    }
-    return line.trim() === '' ? <br key={idx} /> : <p key={idx} className="paragraph-line">{parseMarkdownText(line)}</p>;
-  };
-
-  // Helper to parse text segment tables
+  // Helper to parse markdown blocks (headings, lists, blockquotes, tables, paragraphs)
   const parseTextWithTables = (text: string) => {
     const lines = text.split('\n');
     const elements: React.ReactNode[] = [];
-    let inTable = false;
-    let tableRows: string[][] = [];
+    let i = 0;
 
-    const flushTable = (key: number) => {
-      if (tableRows.length === 0) return null;
+    const flushTable = (rows: string[][], key: number) => {
+      if (rows.length === 0) return null;
       
-      const headers = tableRows[0];
-      const hasDivider = tableRows.length > 1 && tableRows[1].every(cell => cell.trim().startsWith('-') || cell.trim() === '');
-      const dataRows = hasDivider ? tableRows.slice(2) : tableRows.slice(1);
+      const headers = rows[0];
+      const hasDivider = rows.length > 1 && rows[1].every(cell => cell.trim().startsWith('-') || cell.trim() === '');
+      const dataRows = hasDivider ? rows.slice(2) : rows.slice(1);
 
       return (
         <div key={`table-${key}`} className="table-container">
@@ -252,25 +243,117 @@ export const ChatArea: React.FC = () => {
       );
     };
 
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim();
-      
-      if (line.startsWith('|') && line.endsWith('|')) {
-        inTable = true;
-        const cells = line.split('|').slice(1, -1);
-        tableRows.push(cells);
-      } else {
-        if (inTable) {
-          elements.push(flushTable(i));
-          inTable = false;
-          tableRows = [];
-        }
-        elements.push(renderParagraphsLine(lines[i], i));
-      }
-    }
+    while (i < lines.length) {
+      const line = lines[i];
+      const trimmed = line.trim();
 
-    if (inTable) {
-      elements.push(flushTable(lines.length));
+      // 1. Table parsing
+      if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
+        const tableRows: string[][] = [];
+        while (i < lines.length && lines[i].trim().startsWith('|') && lines[i].trim().endsWith('|')) {
+          const cells = lines[i].trim().split('|').slice(1, -1);
+          tableRows.push(cells);
+          i++;
+        }
+        elements.push(flushTable(tableRows, i));
+        continue;
+      }
+
+      // 2. Unordered List parsing
+      if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+        const listItems: string[] = [];
+        while (i < lines.length && (lines[i].trim().startsWith('- ') || lines[i].trim().startsWith('* '))) {
+          listItems.push(lines[i].trim().substring(2));
+          i++;
+        }
+        elements.push(
+          <ul key={`ul-${i}`} className="markdown-ul">
+            {listItems.map((item, idx) => (
+              <li key={idx} className="markdown-li">{parseMarkdownText(item)}</li>
+            ))}
+          </ul>
+        );
+        continue;
+      }
+
+      // 3. Ordered List parsing
+      if (/^\d+\.\s/.test(trimmed)) {
+        const listItems: string[] = [];
+        while (i < lines.length && /^\d+\.\s/.test(lines[i].trim())) {
+          const itemTrimmed = lines[i].trim();
+          const dotIndex = itemTrimmed.indexOf('.');
+          listItems.push(itemTrimmed.substring(dotIndex + 1).trim());
+          i++;
+        }
+        elements.push(
+          <ol key={`ol-${i}`} className="markdown-ol">
+            {listItems.map((item, idx) => (
+              <li key={idx} className="markdown-li">{parseMarkdownText(item)}</li>
+            ))}
+          </ol>
+        );
+        continue;
+      }
+
+      // 4. Blockquote parsing
+      if (trimmed.startsWith('>')) {
+        const quoteLines: string[] = [];
+        while (i < lines.length && lines[i].trim().startsWith('>')) {
+          const quoteLine = lines[i].trim();
+          const cleanQuote = quoteLine.replace(/^>\s*/, '');
+          quoteLines.push(cleanQuote);
+          i++;
+        }
+        elements.push(
+          <blockquote key={`quote-${i}`} className="markdown-blockquote">
+            {quoteLines.map((ql, idx) => (
+              <p key={idx} className="paragraph-line">{parseMarkdownText(ql)}</p>
+            ))}
+          </blockquote>
+        );
+        continue;
+      }
+
+      // 5. Headings
+      if (trimmed.startsWith('# ')) {
+        elements.push(<h1 key={`h1-${i}`}>{parseMarkdownText(trimmed.substring(2))}</h1>);
+        i++;
+        continue;
+      }
+      if (trimmed.startsWith('## ')) {
+        elements.push(<h2 key={`h2-${i}`}>{parseMarkdownText(trimmed.substring(3))}</h2>);
+        i++;
+        continue;
+      }
+      if (trimmed.startsWith('### ')) {
+        elements.push(<h3 key={`h3-${i}`}>{parseMarkdownText(trimmed.substring(4))}</h3>);
+        i++;
+        continue;
+      }
+      if (trimmed.startsWith('#### ')) {
+        elements.push(<h4 key={`h4-${i}`}>{parseMarkdownText(trimmed.substring(5))}</h4>);
+        i++;
+        continue;
+      }
+
+      // 6. Horizontal Rule
+      if (trimmed === '---' || trimmed === '***' || trimmed === '___') {
+        elements.push(<hr key={`hr-${i}`} className="markdown-hr" />);
+        i++;
+        continue;
+      }
+
+      // 7. Regular paragraph or Line break
+      if (trimmed === '') {
+        elements.push(<br key={`br-${i}`} />);
+      } else {
+        elements.push(
+          <p key={`p-${i}`} className="paragraph-line">
+            {parseMarkdownText(line)}
+          </p>
+        );
+      }
+      i++;
     }
 
     return elements;
