@@ -1099,3 +1099,38 @@
   box-shadow: 0 0 8px rgba(0, 217, 255, 0.15);
 }
 
+/* Audio Waveform bouncing animation styles */
+.audio-waveform-container {
+  margin-top: 8px;
+  animation: fadeIn 0.3s ease;
+}
+
+.waveform-bar {
+  width: 3px;
+  height: 100%;
+  background-color: var(--accent-secondary);
+  box-shadow: 0 0 8px var(--accent-secondary);
+  border-radius: 2px;
+  transform-origin: bottom;
+  animation: bounce 1.2s ease-in-out infinite alternate;
+}
+.bar-1 { height: 12px; animation-delay: 0.1s; }
+.bar-2 { height: 18px; animation-delay: 0.3s; }
+.bar-3 { height: 6px; animation-delay: 0.6s; }
+.bar-4 { height: 22px; animation-delay: 0.2s; }
+.bar-5 { height: 14px; animation-delay: 0.8s; }
+.bar-6 { height: 19px; animation-delay: 0.4s; }
+.bar-7 { height: 8px; animation-delay: 0.7s; }
+.bar-8 { height: 24px; animation-delay: 0.15s; }
+.bar-9 { height: 11px; animation-delay: 0.5s; }
+.bar-10 { height: 16px; animation-delay: 0.35s; }
+
+@keyframes bounce {
+  0% { transform: scaleY(0.2); }
+  100% { transform: scaleY(1.0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}

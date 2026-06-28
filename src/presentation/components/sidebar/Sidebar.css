@@ -509,3 +509,35 @@
   color: var(--text-primary);
   box-shadow: 0 0 8px rgba(0, 217, 255, 0.2);
 }
+
+/* Folder Custom Styles */
+.folder-header-row:hover {
+  background-color: rgba(0, 255, 204, 0.04) !important;
+  border-color: rgba(0, 255, 204, 0.15) !important;
+}
+
+.folder-assign-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-smooth);
+}
+
+.folder-assign-btn:hover {
+  color: var(--accent-secondary);
+  background-color: rgba(0, 255, 204, 0.05);
+}
+
+.folder-select-menu button:hover {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+  color: var(--text-primary) !important;
+}
+
+.folder-contents .chat-item-wrapper {
+  margin-top: 2px;
+}
