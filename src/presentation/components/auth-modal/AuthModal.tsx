@@ -40,7 +40,7 @@ export const AuthModal: React.FC = () => {
         }
       } else {
         // Stage 2: Verify OTP
-        await verifyOtp(email, otp);
+        await verifyOtp(email, otp, isLoginTab ? undefined : name);
         handleClose();
       }
     } catch (err: any) {

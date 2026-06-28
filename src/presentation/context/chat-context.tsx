@@ -44,7 +44,7 @@ interface ChatContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (username: string, password: string, email: string, name: string) => Promise<void>;
   sendOtp: (email: string) => Promise<any>;
-  verifyOtp: (email: string, otp: string) => Promise<void>;
+  verifyOtp: (email: string, otp: string, name?: string) => Promise<void>;
   loginWithGoogle: () => void; // Will trigger modal opening
   logout: () => void;
   getProfile: () => Promise<void>;
@@ -338,9 +338,9 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const verifyOtp = async (email: string, otp: string) => {
+  const verifyOtp = async (email: string, otp: string, name?: string) => {
     try {
-      const response = await apiDataSource.verifyOtp(email, otp);
+      const response = await apiDataSource.verifyOtp(email, otp, name);
       const { token, ...profile } = response;
 
       localStorage.setItem('garionx_token', token);
