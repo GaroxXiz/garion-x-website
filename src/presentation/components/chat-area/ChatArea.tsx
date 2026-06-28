@@ -764,10 +764,12 @@ export const ChatArea: React.FC = () => {
             {/* Simulated AI streaming text bubble */}
             {streamingMessageId && (
               <div className="message-row bot-row">
-                <div className="message-bubble bot-bubble">
+                <div className="bot-avatar-wrapper">
                   <div className="bot-avatar-label">
                     {currentPersonality ? currentPersonality.name[0] : 'G'}
                   </div>
+                </div>
+                <div className="message-bubble bot-bubble">
                   <div className="message-content">
                     {renderMessageContent(streamingText)}
                     <span className="blinking-cursor"></span>
@@ -779,10 +781,12 @@ export const ChatArea: React.FC = () => {
             {/* Waiting loader for bot to respond initially */}
             {loading && !streamingMessageId && (
               <div className="message-row bot-row">
-                <div className="message-bubble bot-bubble typing-indicator-bubble">
+                <div className="bot-avatar-wrapper">
                   <div className="bot-avatar-label">
                     {currentPersonality ? currentPersonality.name[0] : 'G'}
                   </div>
+                </div>
+                <div className="message-bubble bot-bubble typing-indicator-bubble">
                   <div className="typing-indicator-wrapper">
                     <div className="typing-indicator">
                       <span className="dot animate-dot-1"></span>
