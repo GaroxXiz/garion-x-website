@@ -36,9 +36,9 @@ export const AuthModal: React.FC = () => {
         setIsOtpSent(true);
         // Show alert conditionally based on whether SMTP is simulated
         if (res && res.otp && res.isMock) {
-          alert(`[MOCK EMAIL SERVICE] SMTP_USER is not configured in backend .env.\nMock OTP Code: ${res.otp}`);
+          alert("[DEV SIMULATION] SMTP_USER & SMTP_PASS belum dikonfigurasi di backend.\n\nSilakan periksa LOG TERMINAL backend Anda untuk mengambil kode OTP.");
         } else {
-          alert(`A security OTP code has been sent successfully via Gmail to: ${email}`);
+          alert(`Kode OTP keamanan telah berhasil dikirim ke email Gmail Anda: ${email}`);
         }
       } else {
         // Stage 2: Verify OTP
@@ -59,9 +59,9 @@ export const AuthModal: React.FC = () => {
       const res = await sendOtp(email);
       setOtp('');
       if (res && res.otp && res.isMock) {
-        alert(`[MOCK EMAIL SERVICE] SMTP_USER is not configured in backend .env.\nMock OTP Code: ${res.otp}`);
+        alert("[DEV SIMULATION] SMTP_USER & SMTP_PASS belum dikonfigurasi di backend.\n\nSilakan periksa LOG TERMINAL backend Anda untuk mengambil kode OTP.");
       } else {
-        alert(`A new security OTP code has been sent successfully via Gmail to: ${email}`);
+        alert(`Kode OTP baru telah berhasil dikirim ke email Gmail Anda: ${email}`);
       }
     } catch (err: any) {
       setErrorMsg(err.message || 'Failed to resend OTP code.');
