@@ -420,3 +420,43 @@
 .chart-row:hover .chart-bar-fill {
   filter: brightness(1.2);
 }
+
+/* Cyber Dashboard Tab Active States */
+.usage-tab-btn.active {
+  text-shadow: 0 0 10px rgba(0, 217, 255, 0.4);
+}
+
+.usage-tab-btn:hover {
+  color: var(--text-primary) !important;
+}
+
+/* Pulse Uptime Glow animations */
+.uptime-glow-dot-green {
+  animation: pulseGreen 1.5s infinite alternate;
+}
+
+.uptime-glow-dot-amber {
+  animation: pulseAmber 1.5s infinite alternate;
+}
+
+@keyframes pulseGreen {
+  0% {
+    opacity: 0.6;
+    box-shadow: 0 0 4px #39ff14;
+  }
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 12px #39ff14;
+  }
+}
+
+@keyframes pulseAmber {
+  0% {
+    opacity: 0.6;
+    box-shadow: 0 0 4px #fbbf24;
+  }
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 12px #fbbf24;
+  }
+}

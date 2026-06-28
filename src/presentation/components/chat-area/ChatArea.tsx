@@ -84,6 +84,151 @@ const CinematicVideoPlayer: React.FC<{ src: string }> = ({ src }) => {
   );
 };
 
+// Safe Mermaid diagram visualizer component loading CDN dynamically
+const MermaidVisualizer: React.FC<{ chart: string }> = ({ chart }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [svg, setSvg] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    
+    const renderChart = async () => {
+      try {
+        if (!(window as any).mermaid) {
+          await new Promise<void>((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js';
+            script.async = true;
+            script.onload = () => {
+              (window as any).mermaid.initialize({
+                startOnLoad: false,
+                theme: 'dark',
+                securityLevel: 'loose',
+                themeVariables: {
+                  background: '#070a13',
+                  primaryColor: '#0088ff',
+                  primaryTextColor: '#ffffff',
+                  lineColor: '#00ffcc'
+                }
+              });
+              resolve();
+            };
+            script.onerror = () => reject(new Error('Mermaid CDN failed to load'));
+            document.body.appendChild(script);
+          });
+        }
+
+        if (!isMounted) return;
+
+        const mermaidInstance = (window as any).mermaid;
+        const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
+        
+        let cleanChart = chart.trim();
+        if (cleanChart.startsWith('mermaid')) {
+          cleanChart = cleanChart.substring(7).trim();
+        }
+
+        const { svg: renderedSvg } = await mermaidInstance.render(id, cleanChart);
+        if (isMounted) {
+          setSvg(renderedSvg);
+          setError(null);
+        }
+      } catch (err: any) {
+        if (isMounted) {
+          setError(err.message || 'Failed to parse Mermaid diagram.');
+        }
+      }
+    };
+
+    renderChart();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [chart]);
+
+  if (error) {
+    return (
+      <div className="mermaid-error-box" style={{
+        padding: '10px',
+        backgroundColor: 'rgba(239, 68, 68, 0.05)',
+        border: '1px solid rgba(239, 68, 68, 0.2)',
+        borderRadius: '6px',
+        color: '#f87171',
+        fontSize: '0.8rem',
+        fontFamily: 'monospace',
+        whiteSpace: 'pre-wrap',
+        textAlign: 'left'
+      }}>
+        <div>⚠️ Mermaid Parsing Details:</div>
+        <div style={{ marginTop: '4px', fontSize: '0.72rem', opacity: 0.8 }}>{error}</div>
+      </div>
+    );
+  }
+
+  if (!svg) {
+    return (
+      <div className="mermaid-loading-box" style={{
+        padding: '20px',
+        color: 'var(--text-muted)',
+        fontSize: '0.8rem',
+        textAlign: 'center',
+        fontStyle: 'italic'
+      }}>
+        Rendering flow chart...
+      </div>
+    );
+  }
+
+  return (
+    <div 
+      className="mermaid-rendered-container" 
+      ref={containerRef}
+      dangerouslySetInnerHTML={{ __html: svg }}
+      style={{
+        backgroundColor: '#070a13',
+        border: '1px solid rgba(0, 217, 255, 0.1)',
+        borderRadius: '6px',
+        padding: '16px',
+        overflowX: 'auto',
+        display: 'flex',
+        justifyContent: 'center',
+        boxShadow: 'inset 0 0 15px rgba(0, 217, 255, 0.03)'
+      }}
+    />
+  );
+};
+
+// Animated Audio Waveform component showing neon bouncing bars
+const AudioWaveform: React.FC = () => {
+  return (
+    <div className="audio-waveform-container" style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: '3px',
+      padding: '8px 12px 2px 12px',
+      borderTop: '1px solid rgba(255, 255, 255, 0.03)',
+      marginTop: '6px',
+      height: '24px'
+    }}>
+      <span style={{ fontSize: '0.68rem', color: 'var(--accent-secondary)', fontWeight: 700, marginRight: '8px', letterSpacing: '1px' }}>
+        COGNITIVE VOICE STREAMING:
+      </span>
+      <div className="waveform-bar bar-1"></div>
+      <div className="waveform-bar bar-2"></div>
+      <div className="waveform-bar bar-3"></div>
+      <div className="waveform-bar bar-4"></div>
+      <div className="waveform-bar bar-5"></div>
+      <div className="waveform-bar bar-6"></div>
+      <div className="waveform-bar bar-7"></div>
+      <div className="waveform-bar bar-8"></div>
+      <div className="waveform-bar bar-9"></div>
+      <div className="waveform-bar bar-10"></div>
+    </div>
+  );
+};
+
 // Safe Code Sandbox Runner component for browser-side script execution
 interface CodeSandboxRunnerProps {
   code: string;
@@ -280,6 +425,11 @@ export const ChatArea: React.FC = () => {
   const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [selectedVoiceName, setSelectedVoiceName] = useState<string>('');
+  const [showVoiceDropdown, setShowVoiceDropdown] = useState(false);
+  const voiceDropdownRef = useRef<HTMLDivElement>(null);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -316,12 +466,20 @@ export const ChatArea: React.FC = () => {
     if (!cleanText) return;
 
     const utterance = new SpeechSynthesisUtterance(cleanText);
-    const isIndonesian = /[aeiou]nd[ao]|dan|yang|untuk|dengan|adalah|bisa|saya|kamu/i.test(cleanText);
-    utterance.lang = isIndonesian ? 'id-ID' : 'en-US';
-
+    if (selectedVoiceName) {
+      const voice = voices.find(v => v.name === selectedVoiceName);
+      if (voice) {
+        utterance.voice = voice;
+        utterance.lang = voice.lang;
+      }
+    } else {
+      const isIndonesian = /[aeiou]nd[ao]|dan|yang|untuk|dengan|adalah|bisa|saya|kamu/i.test(cleanText);
+      utterance.lang = isIndonesian ? 'id-ID' : 'en-US';
+    }
+ 
     utterance.onend = () => setSpeakingMessageId(null);
     utterance.onerror = () => setSpeakingMessageId(null);
-
+ 
     setSpeakingMessageId(messageId);
     window.speechSynthesis.speak(utterance);
   };
@@ -372,9 +530,32 @@ export const ChatArea: React.FC = () => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setShowExportOptions(false);
       }
+      if (voiceDropdownRef.current && !voiceDropdownRef.current.contains(e.target as Node)) {
+        setShowVoiceDropdown(false);
+      }
     };
     document.addEventListener('mousedown', handleOutsideClick);
     return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, []);
+
+  // Load available speech synthesis voices
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const loadVoices = () => {
+      const availableVoices = window.speechSynthesis.getVoices();
+      setVoices(availableVoices);
+      const savedVoice = localStorage.getItem('garionx_speech_voice');
+      if (savedVoice) {
+        setSelectedVoiceName(savedVoice);
+      } else {
+        const defaultVoice = availableVoices.find(v => v.lang.startsWith('id') || v.lang.startsWith('en'))?.name || '';
+        setSelectedVoiceName(defaultVoice);
+      }
+    };
+    loadVoices();
+    if (window.speechSynthesis.onvoiceschanged !== undefined) {
+      window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
   }, []);
 
   // Auto scroll to bottom
@@ -412,6 +593,181 @@ export const ChatArea: React.FC = () => {
     } catch (e) {
       console.error('Failed to share chat:', e);
     }
+  };
+
+  // Handle Export to PDF (Cyber Dossier layout)
+  const handleExportPDF = () => {
+    if (!activeChat || messages.length === 0) return;
+    
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert('Please allow popups to export PDF dossiers.');
+      return;
+    }
+
+    const safeTitle = activeChat.title;
+    const modelName = activeChat.model || 'openai';
+    const agentName = currentPersonality?.name ?? 'GarionX Core';
+    const dateStr = new Date(activeChat.createdAt).toLocaleDateString();
+
+    let htmlContent = `
+      <html>
+        <head>
+          <title>GarionX Cyber Dossier - ${safeTitle}</title>
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+            body {
+              background-color: #03050a;
+              color: #00ffcc;
+              font-family: 'Courier Prime', monospace;
+              padding: 40px;
+              margin: 0;
+            }
+            .dossier-header {
+              border: 2px double #00ffcc;
+              padding: 20px;
+              margin-bottom: 30px;
+              background-color: rgba(0, 255, 204, 0.02);
+              position: relative;
+              overflow: hidden;
+            }
+            .dossier-header::before {
+              content: 'CLASSIFIED PROTOCOL';
+              position: absolute;
+              top: -1px;
+              right: 15px;
+              background-color: #00ffcc;
+              color: #03050a;
+              font-size: 0.65rem;
+              font-weight: bold;
+              padding: 2px 6px;
+              letter-spacing: 2px;
+            }
+            .title {
+              font-size: 1.8rem;
+              font-weight: bold;
+              margin: 0 0 10px 0;
+              text-transform: uppercase;
+              letter-spacing: 2px;
+              text-shadow: 0 0 10px rgba(0, 255, 204, 0.5);
+            }
+            .metadata {
+              display: grid;
+              grid-template-columns: repeat(2, 1fr);
+              gap: 8px 20px;
+              font-size: 0.85rem;
+              color: rgba(0, 255, 204, 0.7);
+              margin-top: 15px;
+              border-top: 1px dashed rgba(0, 255, 204, 0.3);
+              padding-top: 15px;
+            }
+            .message-item {
+              margin-bottom: 25px;
+              border-bottom: 1px solid rgba(0, 255, 204, 0.1);
+              padding-bottom: 20px;
+            }
+            .sender {
+              font-weight: bold;
+              text-transform: uppercase;
+              font-size: 0.9rem;
+              margin-bottom: 8px;
+              display: flex;
+              align-items: center;
+              gap: 8px;
+            }
+            .sender-user {
+              color: #0088ff;
+              text-shadow: 0 0 8px rgba(0, 136, 255, 0.4);
+            }
+            .sender-bot {
+              color: #ff007f;
+              text-shadow: 0 0 8px rgba(255, 0, 127, 0.4);
+            }
+            .content {
+              font-size: 0.95rem;
+              line-height: 1.6;
+              white-space: pre-wrap;
+              color: #e2e8f0;
+            }
+            pre {
+              background-color: #070a13;
+              border: 1px solid rgba(0, 255, 204, 0.3);
+              padding: 12px;
+              border-radius: 4px;
+              overflow-x: auto;
+              color: #00ffcc;
+            }
+            code {
+              font-family: monospace;
+            }
+            @media print {
+              body {
+                background-color: #ffffff;
+                color: #000000;
+              }
+              .dossier-header {
+                border-color: #000000;
+                background-color: transparent;
+              }
+              .dossier-header::before {
+                background-color: #000000;
+                color: #ffffff;
+              }
+              .title {
+                text-shadow: none;
+              }
+              .sender-user { color: #0000ff; text-shadow: none; }
+              .sender-bot { color: #d00000; text-shadow: none; }
+              .content { color: #000000; }
+              pre {
+                border-color: #000000;
+                background-color: #f1f5f9;
+                color: #000000;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="dossier-header">
+            <h1 class="title">${safeTitle}</h1>
+            <div class="metadata">
+              <div><strong>DOSSIER ID:</strong> G-X-${activeChat.id.substring(0, 8).toUpperCase()}</div>
+              <div><strong>DATE STAMP:</strong> ${dateStr}</div>
+              <div><strong>COORDINATOR:</strong> ${agentName}</div>
+              <div><strong>SYSTEM PORT:</strong> ${modelName.toUpperCase()}</div>
+            </div>
+          </div>
+          <div class="dossier-body">
+    `;
+
+    messages.forEach((msg) => {
+      const isUser = msg.sender === 'user';
+      const senderClass = isUser ? 'sender-user' : 'sender-bot';
+      const senderLabel = isUser ? '▲ AGENT (USER)' : `▼ COGNITIVE SYSTEM (${agentName})`;
+
+      htmlContent += `
+        <div class="message-item">
+          <div class="sender ${senderClass}">${senderLabel}</div>
+          <div class="content">${msg.content}</div>
+        </div>
+      `;
+    });
+
+    htmlContent += `
+          </div>
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(function() { window.close(); }, 500);
+            }
+          </script>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+    setShowExportOptions(false);
   };
 
   // Handle Export File Generation
@@ -705,23 +1061,54 @@ export const ChatArea: React.FC = () => {
         parts.push(<span key={lastIndex} className="text-content">{parseTextWithTables(textBefore)}</span>);
       }
 
-      parts.push(
-        <div key={match.index} className="code-block-container">
-          <div className="code-block-header">
-            <span>{language}</span>
-            <button
-              onClick={() => navigator.clipboard.writeText(code)}
-              className="copy-code-btn"
-            >
-              Copy
-            </button>
+      if (language.toLowerCase() === 'mermaid') {
+        parts.push(
+          <div key={match.index} className="mermaid-diagram-container" style={{ margin: '14px 0', width: '100%' }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              fontSize: '0.72rem',
+              color: 'var(--text-muted)',
+              marginBottom: '6px',
+              fontWeight: 600
+            }}>
+              <span>📊 Interactive Cyber Flowchart</span>
+              <button
+                onClick={() => navigator.clipboard.writeText(code)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--text-muted)',
+                  cursor: 'pointer',
+                  fontSize: '0.7rem'
+                }}
+              >
+                Copy Source
+              </button>
+            </div>
+            <MermaidVisualizer chart={code} />
           </div>
-          <pre className="code-block-pre">
-            {highlightCode(code)}
-          </pre>
-          <CodeSandboxRunner code={code} language={language} />
-        </div>
-      );
+        );
+      } else {
+        parts.push(
+          <div key={match.index} className="code-block-container">
+            <div className="code-block-header">
+              <span>{language}</span>
+              <button
+                onClick={() => navigator.clipboard.writeText(code)}
+                className="copy-code-btn"
+              >
+                Copy
+              </button>
+            </div>
+            <pre className="code-block-pre">
+              {highlightCode(code)}
+            </pre>
+            <CodeSandboxRunner code={code} language={language} />
+          </div>
+        );
+      }
 
       lastIndex = codeBlockRegex.lastIndex;
     }
@@ -785,6 +1172,93 @@ export const ChatArea: React.FC = () => {
               </button>
             </div>
 
+            {/* Voice selection dropdown */}
+            <div className="header-voice-container" ref={voiceDropdownRef} style={{ position: 'relative' }}>
+              <button
+                className="voice-trigger-btn animate-glow"
+                onClick={() => setShowVoiceDropdown(!showVoiceDropdown)}
+                title="Select AI Speech Voice"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  backgroundColor: 'rgba(30, 30, 46, 0.4)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: 'var(--border-radius-md)',
+                  padding: '6px 12px',
+                  color: 'var(--text-secondary)',
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'var(--transition-smooth)'
+                }}
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                  <line x1="12" y1="19" x2="12" y2="23"></line>
+                  <line x1="8" y1="23" x2="16" y2="23"></line>
+                </svg>
+                <span>Voice</span>
+              </button>
+              {showVoiceDropdown && (
+                <div className="voice-dropdown glass-panel" style={{
+                  position: 'absolute',
+                  top: '100%',
+                  right: 0,
+                  marginTop: '8px',
+                  backgroundColor: 'var(--bg-secondary)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: 'var(--border-radius-md)',
+                  padding: '8px',
+                  width: '240px',
+                  zIndex: 100,
+                  boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
+                  maxHeight: '200px',
+                  overflowY: 'auto',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '4px'
+                }}>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', padding: '4px 8px', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '4px' }}>
+                    SELECT AI VOICE
+                  </div>
+                  {voices.length === 0 ? (
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', padding: '8px', textAlign: 'center' }}>No voices detected</div>
+                  ) : (
+                    voices.map((v) => (
+                      <button
+                        key={v.name}
+                        onClick={() => {
+                          setSelectedVoiceName(v.name);
+                          localStorage.setItem('garionx_speech_voice', v.name);
+                          setShowVoiceDropdown(false);
+                        }}
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          color: selectedVoiceName === v.name ? '#00ffcc' : 'var(--text-secondary)',
+                          padding: '6px 8px',
+                          textAlign: 'left',
+                          fontSize: '0.78rem',
+                          cursor: 'pointer',
+                          borderRadius: '4px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '2px',
+                          backgroundColor: selectedVoiceName === v.name ? 'rgba(0, 255, 204, 0.05)' : 'transparent',
+                          transition: 'var(--transition-smooth)'
+                        }}
+                      >
+                        <span style={{ fontWeight: 600 }}>{v.name}</span>
+                        <span style={{ fontSize: '0.65rem', opacity: 0.6 }}>Lang: {v.lang}</span>
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+
             {/* Export dropdown */}
             <div className="header-export-container" ref={dropdownRef}>
               <button
@@ -817,7 +1291,7 @@ export const ChatArea: React.FC = () => {
                     </svg>
                     JSON Format
                   </button>
-                  <button onClick={() => { setShowExportOptions(false); if (typeof window !== 'undefined') window.print(); }}>
+                  <button onClick={handleExportPDF}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ marginRight: '8px' }}>
                       <polyline points="6 9 6 2 18 2 18 9"></polyline>
                       <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
@@ -924,6 +1398,9 @@ export const ChatArea: React.FC = () => {
                       <div className="message-content">
                         {renderMessageContent(msg.content)}
                       </div>
+                    )}
+                    {speakingMessageId === msg.id && (
+                      <AudioWaveform />
                     )}
 
                     {/* User Message Action Panel (Copy) */}

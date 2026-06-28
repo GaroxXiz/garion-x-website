@@ -30,6 +30,234 @@ export const Sidebar: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [modelFilter, setModelFilter] = useState<'all' | 'openai' | 'gemini' | 'claude'>('all');
 
+  const [folders, setFolders] = useState<string[]>(() => {
+    if (typeof window === 'undefined') return ['Projects', 'Archive', 'Drafts'];
+    const saved = localStorage.getItem('garionx_chat_folders');
+    return saved ? JSON.parse(saved) : ['Projects', 'Archive', 'Drafts'];
+  });
+  
+  const [collapsedFolders, setCollapsedFolders] = useState<string[]>(() => {
+    if (typeof window === 'undefined') return [];
+    const saved = localStorage.getItem('garionx_collapsed_folders');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [chatFolderMap, setChatFolderMap] = useState<Record<string, string>>(() => {
+    if (typeof window === 'undefined') return {};
+    const saved = localStorage.getItem('garionx_chat_folder_mapping');
+    return saved ? JSON.parse(saved) : {};
+  });
+
+  const [movingChatId, setMovingChatId] = useState<string | null>(null);
+
+  const createFolder = () => {
+    const name = prompt('Enter new folder name:');
+    if (!name) return;
+    const cleanName = name.trim();
+    if (!cleanName) return;
+    if (folders.includes(cleanName)) {
+      alert('Folder already exists!');
+      return;
+    }
+    const updated = [...folders, cleanName];
+    setFolders(updated);
+    localStorage.setItem('garionx_chat_folders', JSON.stringify(updated));
+  };
+
+  const deleteFolder = (folderName: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm(`Are you sure you want to delete folder "${folderName}"? Chats inside will be uncategorized.`)) return;
+    const updatedFolders = folders.filter(f => f !== folderName);
+    setFolders(updatedFolders);
+    localStorage.setItem('garionx_chat_folders', JSON.stringify(updatedFolders));
+
+    const updatedMap = { ...chatFolderMap };
+    Object.keys(updatedMap).forEach(chatId => {
+      if (updatedMap[chatId] === folderName) {
+        delete updatedMap[chatId];
+      }
+    });
+    setChatFolderMap(updatedMap);
+    localStorage.setItem('garionx_chat_folder_mapping', JSON.stringify(updatedMap));
+  };
+
+  const toggleFolderCollapse = (folderName: string) => {
+    const isCollapsed = collapsedFolders.includes(folderName);
+    const updated = isCollapsed 
+      ? collapsedFolders.filter(f => f !== folderName)
+      : [...collapsedFolders, folderName];
+    setCollapsedFolders(updated);
+    localStorage.setItem('garionx_collapsed_folders', JSON.stringify(updated));
+  };
+
+  const moveChatToFolder = (chatId: string, folderName: string | null) => {
+    const updated = { ...chatFolderMap };
+    if (folderName === null) {
+      delete updated[chatId];
+    } else {
+      updated[chatId] = folderName;
+    }
+    setChatFolderMap(updated);
+    localStorage.setItem('garionx_chat_folder_mapping', JSON.stringify(updated));
+    setMovingChatId(null);
+  };
+
+  const renderChatItem = (chat: any) => {
+    const isActive = activeChat?.id === chat.id;
+    return (
+      <div
+        key={chat.id}
+        className={`chat-item-wrapper ${isActive ? 'active' : ''} ${chat.isPinned ? 'pinned' : ''}`}
+      >
+        <button
+          className="chat-item-btn"
+          onClick={() => selectChat(chat.id)}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="chat-icon">
+            {chat.isPinned ? (
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="currentColor" opacity="0.8" />
+            ) : (
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            )}
+          </svg>
+          <span className="chat-title">{chat.title}</span>
+        </button>
+
+        <div className="chat-actions-group">
+          {/* Move to folder trigger */}
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <button
+              className="folder-assign-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                setMovingChatId(movingChatId === chat.id ? null : chat.id);
+              }}
+              title="Move to Folder"
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: chatFolderMap[chat.id] ? '#00ffcc' : 'var(--text-secondary)',
+                cursor: 'pointer',
+                padding: '4px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: 0.7,
+                transition: 'opacity 0.2s'
+              }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+              </svg>
+            </button>
+            {movingChatId === chat.id && (
+              <div className="folder-select-menu glass-panel" style={{
+                position: 'absolute',
+                bottom: '100%',
+                right: 0,
+                backgroundColor: 'var(--bg-secondary)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '6px',
+                padding: '6px',
+                zIndex: 150,
+                width: '150px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '4px',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.5)'
+              }}>
+                <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)', padding: '2px 4px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'block', textAlign: 'left', fontWeight: 700 }}>
+                  MOVE TO FOLDER:
+                </span>
+                <button
+                  onClick={(e) => { e.stopPropagation(); moveChatToFolder(chat.id, null); }}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: !chatFolderMap[chat.id] ? '#00ffcc' : 'var(--text-secondary)',
+                    fontSize: '0.72rem',
+                    padding: '6px',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    borderRadius: '4px',
+                    backgroundColor: !chatFolderMap[chat.id] ? 'rgba(0, 255, 204, 0.05)' : 'transparent'
+                  }}
+                >
+                  Uncategorized
+                </button>
+                {folders.map(f => (
+                  <button
+                    key={f}
+                    onClick={(e) => { e.stopPropagation(); moveChatToFolder(chat.id, f); }}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: chatFolderMap[chat.id] === f ? '#00ffcc' : 'var(--text-secondary)',
+                      fontSize: '0.72rem',
+                      padding: '6px',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      borderRadius: '4px',
+                      backgroundColor: chatFolderMap[chat.id] === f ? 'rgba(0, 255, 204, 0.05)' : 'transparent'
+                    }}
+                  >
+                    📁 {f}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Pin button */}
+          <button
+            className={`pin-chat-btn ${chat.isPinned ? 'active' : ''}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              pinChat(chat.id);
+            }}
+            title={chat.isPinned ? "Unpin Chat" : "Pin Chat"}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <line x1="12" y1="17" x2="12" y2="22"></line>
+              <path d="M5 17h14v-1.76a2 2 0 0 0-.44-1.24l-2.78-3.47A2 2 0 0 1 15 9.29V5a3 3 0 0 0-6 0v4.29a2 2 0 0 1-.78 1.24l-2.78 3.47A2 2 0 0 0 5 15.24z"></path>
+            </svg>
+          </button>
+
+          {/* Archive button */}
+          <button
+            className={`archive-chat-btn ${chat.isArchived ? 'active' : ''}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              archiveChat(chat.id);
+            }}
+            title={chat.isArchived ? "Unarchive Chat" : "Archive Chat"}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <polyline points="21 8 21 21 3 21 3 8"></polyline>
+              <rect x="1" y="3" width="22" height="5"></rect>
+              <line x1="10" y1="12" x2="14" y2="12"></line>
+            </svg>
+          </button>
+
+          {/* Delete button */}
+          <button
+            className="delete-chat-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              deleteChat(chat.id);
+            }}
+            title="Delete Chat"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   const avatarUrl = user && user.avatarUrl
     ? (user.avatarUrl.startsWith('/') ? `${BASE_URL}${user.avatarUrl}` : user.avatarUrl)
     : `https://api.dicebear.com/7.x/bottts/svg?seed=avatar`;
@@ -125,116 +353,184 @@ export const Sidebar: React.FC = () => {
           </button>
         </div>
       </div>
-
       {/* Chat History List */}
       <div className="chat-history-container">
         <div className="section-title-wrapper" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 8px 8px 12px' }}>
           <span className="section-title" style={{ paddingLeft: 0, marginBottom: 0 }}>
             {showArchived ? 'Archived Chats' : (searchQuery || modelFilter !== 'all' ? 'Filtered Chats' : 'Recent Chats')}
           </span>
-          <button
-            type="button"
-            className={`archive-toggle-btn ${showArchived ? 'active' : ''}`}
-            onClick={() => setShowArchived(!showArchived)}
-            title={showArchived ? "Show Active Chats" : "Show Archived Chats"}
-            style={{ 
-              background: 'transparent', 
-              border: 'none', 
-              color: showArchived ? '#00d9ff' : '#64748b', 
-              cursor: 'pointer', 
-              display: 'flex', 
-              alignItems: 'center', 
-              fontSize: '0.72rem', 
-              fontWeight: 700, 
-              gap: '4px',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px'
-            }}
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <polyline points="21 8 21 21 3 21 3 8"></polyline>
-              <rect x="1" y="3" width="22" height="5"></rect>
-            </svg>
-            <span>{showArchived ? "Active" : "Archived"}</span>
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {/* New Folder Button */}
+            {!showArchived && !searchQuery && modelFilter === 'all' && (
+              <button
+                type="button"
+                onClick={createFolder}
+                title="Create New Folder"
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#64748b',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '2px',
+                  transition: 'color 0.2s'
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                  <line x1="12" y1="11" x2="12" y2="17"></line>
+                  <line x1="9" y1="14" x2="15" y2="14"></line>
+                </svg>
+              </button>
+            )}
+            
+            <button
+              type="button"
+              className={`archive-toggle-btn ${showArchived ? 'active' : ''}`}
+              onClick={() => setShowArchived(!showArchived)}
+              title={showArchived ? "Show Active Chats" : "Show Archived Chats"}
+              style={{ 
+                background: 'transparent', 
+                border: 'none', 
+                color: showArchived ? '#00d9ff' : '#64748b', 
+                cursor: 'pointer', 
+                display: 'flex', 
+                alignItems: 'center', 
+                fontSize: '0.72rem', 
+                fontWeight: 700, 
+                gap: '4px',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px'
+              }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <polyline points="21 8 21 21 3 21 3 8"></polyline>
+                <rect x="1" y="3" width="22" height="5"></rect>
+              </svg>
+              <span>{showArchived ? "Active" : "Archived"}</span>
+            </button>
+          </div>
         </div>
-        <div className="chats-list">
+        <div className="chats-list" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {filteredChats.length === 0 ? (
             <div className="empty-chats">
               {chats.length === 0 ? 'No chat histories yet' : 'No matching chats found'}
             </div>
           ) : (
-            filteredChats.map((chat) => {
-              const isActive = activeChat?.id === chat.id;
+            (() => {
+              // Group chats by folder
+              const chatsByFolder: Record<string, typeof filteredChats> = {};
+              const unassignedChats: typeof filteredChats = [];
+
+              filteredChats.forEach(chat => {
+                const folderName = chatFolderMap[chat.id];
+                if (folderName && folders.includes(folderName)) {
+                  if (!chatsByFolder[folderName]) {
+                    chatsByFolder[folderName] = [];
+                  }
+                  chatsByFolder[folderName].push(chat);
+                } else {
+                  unassignedChats.push(chat);
+                }
+              });
+
               return (
-                <div
-                  key={chat.id}
-                  className={`chat-item-wrapper ${isActive ? 'active' : ''} ${chat.isPinned ? 'pinned' : ''}`}
-                >
-                  <button
-                    className="chat-item-btn"
-                    onClick={() => selectChat(chat.id)}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="chat-icon">
-                      {chat.isPinned ? (
-                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="currentColor" opacity="0.8" />
-                      ) : (
-                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  
+                  {/* Render Folder Groups */}
+                  {!showArchived && !searchQuery && modelFilter === 'all' && folders.map(folderName => {
+                    const folderChats = chatsByFolder[folderName] || [];
+                    const isCollapsed = collapsedFolders.includes(folderName);
+
+                    return (
+                      <div key={folderName} className="folder-group" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <div
+                          className="folder-header-row"
+                          onClick={() => toggleFolderCollapse(folderName)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '6px 8px',
+                            borderRadius: 'var(--border-radius-md)',
+                            backgroundColor: 'rgba(255,255,255,0.02)',
+                            border: '1px solid rgba(255,255,255,0.03)',
+                            cursor: 'pointer',
+                            userSelect: 'none',
+                            transition: 'var(--transition-smooth)'
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ fontSize: '0.65rem', transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0)', transition: 'transform 0.2s', display: 'inline-block' }}>▼</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-secondary)" strokeWidth="2.5">
+                              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                            </svg>
+                            <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-primary)' }}>{folderName}</span>
+                            <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>({folderChats.length})</span>
+                          </div>
+                          
+                          <button
+                            onClick={(e) => deleteFolder(folderName, e)}
+                            style={{
+                              background: 'transparent',
+                              border: 'none',
+                              color: 'rgba(239, 68, 68, 0.6)',
+                              fontSize: '0.8rem',
+                              cursor: 'pointer',
+                              padding: '2px'
+                            }}
+                            title="Delete Folder"
+                          >
+                            &times;
+                          </button>
+                        </div>
+
+                        {!isCollapsed && (
+                          <div className="folder-contents" style={{ paddingLeft: '12px', display: 'flex', flexDirection: 'column', gap: '2px', borderLeft: '1px dashed rgba(255,255,255,0.05)', marginLeft: '14px' }}>
+                            {folderChats.length === 0 ? (
+                              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', padding: '6px 8px', fontStyle: 'italic' }}>
+                                Folder is empty
+                              </div>
+                            ) : (
+                              folderChats.map(chat => renderChatItem(chat))
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {/* Render Unassigned Chats / Search/Filter layouts */}
+                  {((showArchived || searchQuery || modelFilter !== 'all') ? filteredChats : unassignedChats).length > 0 && (
+                    <div className="folder-group" style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px' }}>
+                      {(!showArchived && !searchQuery && modelFilter === 'all' && folders.length > 0) && (
+                        <div
+                          className="folder-header-row"
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            padding: '6px 8px',
+                            borderRadius: 'var(--border-radius-md)',
+                            backgroundColor: 'rgba(255,255,255,0.01)',
+                            userSelect: 'none'
+                          }}
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2.5" style={{ marginRight: '6px' }}>
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                          </svg>
+                          <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-muted)' }}>Uncategorized</span>
+                        </div>
                       )}
-                    </svg>
-                    <span className="chat-title">{chat.title}</span>
-                  </button>
+                      <div className="folder-contents" style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                        {((showArchived || searchQuery || modelFilter !== 'all') ? filteredChats : unassignedChats).map(chat => renderChatItem(chat))}
+                      </div>
+                    </div>
+                  )}
 
-                  <div className="chat-actions-group">
-                    {/* Pin button */}
-                    <button
-                      className={`pin-chat-btn ${chat.isPinned ? 'active' : ''}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        pinChat(chat.id);
-                      }}
-                      title={chat.isPinned ? "Unpin Chat" : "Pin Chat"}
-                    >
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                        <line x1="12" y1="17" x2="12" y2="22"></line>
-                        <path d="M5 17h14v-1.76a2 2 0 0 0-.44-1.24l-2.78-3.47A2 2 0 0 1 15 9.29V5a3 3 0 0 0-6 0v4.29a2 2 0 0 1-.78 1.24l-2.78 3.47A2 2 0 0 0 5 15.24z"></path>
-                      </svg>
-                    </button>
-
-                    {/* Archive button */}
-                    <button
-                      className={`archive-chat-btn ${chat.isArchived ? 'active' : ''}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        archiveChat(chat.id);
-                      }}
-                      title={chat.isArchived ? "Unarchive Chat" : "Archive Chat"}
-                    >
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                        <polyline points="21 8 21 21 3 21 3 8"></polyline>
-                        <rect x="1" y="3" width="22" height="5"></rect>
-                        <line x1="10" y1="12" x2="14" y2="12"></line>
-                      </svg>
-                    </button>
-
-                    {/* Delete button */}
-                    <button
-                      className="delete-chat-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        deleteChat(chat.id);
-                      }}
-                      title="Delete Chat"
-                    >
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                        <polyline points="3 6 5 6 21 6"></polyline>
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                      </svg>
-                    </button>
-                  </div>
                 </div>
               );
-            })
+            })()
           )}
         </div>
       </div>
