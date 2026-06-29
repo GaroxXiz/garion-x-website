@@ -41,10 +41,10 @@ interface ChatContextType {
   deleteChat: (chatId: string) => Promise<void>;
   sendMessage: (content: string, attachmentUrl?: string, attachmentType?: string) => Promise<void>;
   uploadFile: (file: File) => Promise<{ url: string; type: string }>;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<any>;
   register: (username: string, password: string, email: string, name: string) => Promise<void>;
   sendOtp: (email: string) => Promise<any>;
-  verifyOtp: (email: string, otp: string, name?: string) => Promise<void>;
+  verifyOtp: (email: string, otp: string, name?: string, password?: string) => Promise<void>;
   loginWithGoogle: () => void; // Will trigger modal opening
   logout: () => void;
   getProfile: () => Promise<void>;
@@ -294,6 +294,9 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     try {
       const response = await apiDataSource.login(email, password);
+      if (response && response.requiresOtp) {
+        return response;
+      }
       const { token, ...profile } = response;
       
       localStorage.setItem('garionx_token', token);
@@ -305,6 +308,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Load user specific chats
       const chatList = await usecases.getChats.execute();
       setChats(chatList);
+      return response;
     } catch (e: any) {
       throw new Error(e.message || 'Login failed');
     }
@@ -338,9 +342,9 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const verifyOtp = async (email: string, otp: string, name?: string) => {
+  const verifyOtp = async (email: string, otp: string, name?: string, password?: string) => {
     try {
-      const response = await apiDataSource.verifyOtp(email, otp, name);
+      const response = await apiDataSource.verifyOtp(email, otp, name, password);
       const { token, ...profile } = response;
 
       localStorage.setItem('garionx_token', token);
