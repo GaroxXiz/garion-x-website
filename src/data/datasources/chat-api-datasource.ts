@@ -176,11 +176,11 @@ export class ChatApiDataSource {
     return response.json();
   }
 
-  async verifyOtp(email: string, otp: string, name?: string): Promise<any> {
+  async verifyOtp(email: string, otp: string, name?: string, password?: string): Promise<any> {
     const response = await fetch(`${BASE_URL}/api/auth/verify-otp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, otp, name }),
+      body: JSON.stringify({ email, otp, name, password }),
     });
     if (!response.ok) {
       const errorMsg = await response.text();

@@ -3,10 +3,11 @@ import { useChat } from '../../context/chat-context';
 import './AuthModal.css';
 
 export const AuthModal: React.FC = () => {
-  const { isAuthModalOpen, setAuthModalOpen, sendOtp, verifyOtp } = useChat();
+  const { isAuthModalOpen, setAuthModalOpen, login, sendOtp, verifyOtp } = useChat();
   const [isLoginTab, setIsLoginTab] = useState(true);
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
+  const [password, setPassword] = useState('');
   const [otp, setOtp] = useState('');
   const [isOtpSent, setIsOtpSent] = useState(false);
   
@@ -20,6 +21,7 @@ export const AuthModal: React.FC = () => {
     setErrorMsg(null);
     setEmail('');
     setName('');
+    setPassword('');
     setOtp('');
     setIsOtpSent(false);
   };
@@ -31,18 +33,32 @@ export const AuthModal: React.FC = () => {
 
     try {
       if (!isOtpSent) {
-        // Stage 1: Send OTP to Email
-        const res = await sendOtp(email);
-        setIsOtpSent(true);
-        // Show alert conditionally based on whether SMTP is simulated
-        if (res && res.otp && res.isMock) {
-          alert("[DEV SIMULATION] SMTP_USER & SMTP_PASS belum dikonfigurasi di backend.\n\nSilakan periksa LOG TERMINAL backend Anda untuk mengambil kode OTP.");
+        if (isLoginTab) {
+          // Stage 1 (Login): Verify Email + Password, request OTP
+          const res = await login(email, password);
+          setIsOtpSent(true);
+          if (res && res.otp && res.isMock) {
+            alert("[DEV SIMULATION] SMTP_USER & SMTP_PASS belum dikonfigurasi di backend.\n\nSilakan periksa LOG TERMINAL backend Anda untuk mengambil kode OTP.");
+          } else {
+            alert(`Kode OTP keamanan telah berhasil dikirim ke email Gmail Anda: ${email}`);
+          }
         } else {
-          alert(`Kode OTP keamanan telah berhasil dikirim ke email Gmail Anda: ${email}`);
+          // Stage 1 (Register): Request OTP to Email
+          const res = await sendOtp(email);
+          setIsOtpSent(true);
+          if (res && res.otp && res.isMock) {
+            alert("[DEV SIMULATION] SMTP_USER & SMTP_PASS belum dikonfigurasi di backend.\n\nSilakan periksa LOG TERMINAL backend Anda untuk mengambil kode OTP.");
+          } else {
+            alert(`Kode OTP keamanan telah berhasil dikirim ke email Gmail Anda: ${email}`);
+          }
         }
       } else {
         // Stage 2: Verify OTP
-        await verifyOtp(email, otp, isLoginTab ? undefined : name);
+        if (isLoginTab) {
+          await verifyOtp(email, otp);
+        } else {
+          await verifyOtp(email, otp, name, password);
+        }
         handleClose();
       }
     } catch (err: any) {
@@ -56,7 +72,12 @@ export const AuthModal: React.FC = () => {
     setErrorMsg(null);
     setLoadingState(true);
     try {
-      const res = await sendOtp(email);
+      let res;
+      if (isLoginTab) {
+        res = await login(email, password);
+      } else {
+        res = await sendOtp(email);
+      }
       setOtp('');
       if (res && res.otp && res.isMock) {
         alert("[DEV SIMULATION] SMTP_USER & SMTP_PASS belum dikonfigurasi di backend.\n\nSilakan periksa LOG TERMINAL backend Anda untuk mengambil kode OTP.");
@@ -74,7 +95,7 @@ export const AuthModal: React.FC = () => {
     <div className="modal-overlay" onClick={handleClose}>
       <div className="modal-content glass-panel animate-fade-in" onClick={(e) => e.stopPropagation()}>
         {/* Close Button */}
-        <button className="modal-close-btn" onClick={handleClose}>
+        <button className="modal-close-btn" onClick={handleClose} aria-label="Close Modal">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -85,19 +106,23 @@ export const AuthModal: React.FC = () => {
         {!isOtpSent && (
           <div className="modal-tabs">
             <button
+              type="button"
               className={`tab-btn ${isLoginTab ? 'active' : ''}`}
               onClick={() => {
                 setIsLoginTab(true);
                 setErrorMsg(null);
+                setPassword('');
               }}
             >
               Sign In
             </button>
             <button
+              type="button"
               className={`tab-btn ${!isLoginTab ? 'active' : ''}`}
               onClick={() => {
                 setIsLoginTab(false);
                 setErrorMsg(null);
+                setPassword('');
               }}
             >
               Register
@@ -111,7 +136,7 @@ export const AuthModal: React.FC = () => {
           <p>
             {isOtpSent 
               ? 'Enter security authorization code' 
-              : (isLoginTab ? 'Request OTP code to authorize session' : 'Register a new profile via Email OTP')}
+              : (isLoginTab ? 'Enter your credentials to receive an OTP' : 'Create a new profile with password and OTP')}
           </p>
         </div>
 
@@ -149,12 +174,25 @@ export const AuthModal: React.FC = () => {
                   />
                 </div>
               )}
+
+              <div className="form-group">
+                <label htmlFor="password">Password</label>
+                <input
+                  type="password"
+                  id="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  disabled={loadingState}
+                />
+              </div>
             </>
           ) : (
             <>
               <div className="form-group">
                 <label htmlFor="otp">Enter 6-Digit OTP Code</label>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div className="otp-input-container">
                   <input
                     type="text"
                     id="otp"
@@ -163,15 +201,15 @@ export const AuthModal: React.FC = () => {
                     placeholder="••••••"
                     required
                     disabled={loadingState}
-                    style={{ textAlign: 'center', letterSpacing: '8px', fontSize: '1.2rem', fontWeight: 'bold' }}
+                    className="otp-field"
                   />
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', marginTop: '4px' }}>
-                    <span style={{ color: 'var(--text-secondary)' }}>Sent to: <strong>{email}</strong></span>
-                    <div style={{ display: 'flex', gap: '10px' }}>
+                  <div className="otp-info-footer">
+                    <span className="sent-to-text">Sent to: <strong>{email}</strong></span>
+                    <div className="otp-actions-wrapper">
                       <button
                         type="button"
                         onClick={handleResendOtp}
-                        style={{ background: 'transparent', border: 'none', color: '#00d9ff', cursor: 'pointer', fontWeight: 600, padding: 0 }}
+                        className="otp-action-link resend"
                         disabled={loadingState}
                       >
                         Resend OTP
@@ -182,7 +220,7 @@ export const AuthModal: React.FC = () => {
                           setIsOtpSent(false);
                           setOtp('');
                         }}
-                        style={{ background: 'transparent', border: 'none', color: '#00ffcc', cursor: 'pointer', fontWeight: 600, padding: 0 }}
+                        className="otp-action-link change-email"
                       >
                         Change Email
                       </button>
