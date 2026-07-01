@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { apiDataSource } from '../../../data/datasources/chat-api-datasource';
+import { useChat } from '../../context/chat-context';
 import './UsageModal.css';
 
 interface ModelUsage {
@@ -118,6 +119,9 @@ function formatDate(dateStr: string | null): string {
 }
 
 export const UsageModal: React.FC<UsageModalProps> = ({ isOpen, onClose }) => {
+  const { user } = useChat();
+  const isSuperAdmin = user && user.email === 'superadmin@garionx.com';
+
   const [data, setData] = useState<UsageData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -227,25 +231,27 @@ export const UsageModal: React.FC<UsageModalProps> = ({ isOpen, onClose }) => {
           >
             Token Consumption
           </button>
-          <button
-            className={`usage-tab-btn ${activeTab === 'system' ? 'active' : ''}`}
-            onClick={() => setActiveTab('system')}
-            style={{
-              padding: '12px 16px',
-              background: 'transparent',
-              border: 'none',
-              color: activeTab === 'system' ? 'var(--accent-secondary)' : 'var(--text-secondary)',
-              borderBottom: activeTab === 'system' ? '2px solid var(--accent-secondary)' : '2px solid transparent',
-              cursor: 'pointer',
-              fontSize: '0.82rem',
-              fontWeight: 700,
-              transition: 'var(--transition-smooth)',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px'
-            }}
-          >
-            System Status
-          </button>
+          {isSuperAdmin && (
+            <button
+              className={`usage-tab-btn ${activeTab === 'system' ? 'active' : ''}`}
+              onClick={() => setActiveTab('system')}
+              style={{
+                padding: '12px 16px',
+                background: 'transparent',
+                border: 'none',
+                color: activeTab === 'system' ? 'var(--accent-secondary)' : 'var(--text-secondary)',
+                borderBottom: activeTab === 'system' ? '2px solid var(--accent-secondary)' : '2px solid transparent',
+                cursor: 'pointer',
+                fontSize: '0.82rem',
+                fontWeight: 700,
+                transition: 'var(--transition-smooth)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px'
+              }}
+            >
+              System Status
+            </button>
+          )}
         </div>
 
         {/* Content */}
@@ -477,7 +483,7 @@ export const UsageModal: React.FC<UsageModalProps> = ({ isOpen, onClose }) => {
                   Percentages shown relative to configured monthly budget per model. Updated: {new Date(data.generatedAt).toLocaleTimeString()}
                 </div>
               </>
-            ) : (
+            ) : (activeTab === 'system' && isSuperAdmin) ? (
               <div className="system-dashboard-container animate-fade-in" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px', maxHeight: '500px', overflowY: 'auto' }}>
                 
                 {/* Uptime Services Section */}
@@ -601,7 +607,7 @@ export const UsageModal: React.FC<UsageModalProps> = ({ isOpen, onClose }) => {
                   </div>
                 </div>
               </div>
-            )}
+            ) : null}
           </>
         ) : null}
       </div>
