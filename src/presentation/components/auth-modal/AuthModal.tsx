@@ -60,11 +60,13 @@ export const AuthModal: React.FC = () => {
           if (isLoginTab) {
             // Stage 1 (Login): Verify Email + Password, request OTP
             const res = await login(email, password);
-            setIsOtpSent(true);
-            if (res && res.otp && res.isMock) {
-              alert("[DEV SIMULATION] SMTP_USER & SMTP_PASS belum dikonfigurasi di backend.\n\nSilakan periksa LOG TERMINAL backend Anda untuk mengambil kode OTP.");
-            } else {
-              alert(`Kode OTP keamanan telah berhasil dikirim ke email Gmail Anda: ${email}`);
+            if (res && res.requiresOtp) {
+              setIsOtpSent(true);
+              if (res.otp && res.isMock) {
+                alert("[DEV SIMULATION] SMTP_USER & SMTP_PASS belum dikonfigurasi di backend.\n\nSilakan periksa LOG TERMINAL backend Anda untuk mengambil kode OTP.");
+              } else {
+                alert(`Kode OTP keamanan telah berhasil dikirim ke email Gmail Anda: ${email}`);
+              }
             }
           } else {
             // Stage 1 (Register): Request OTP to Email
