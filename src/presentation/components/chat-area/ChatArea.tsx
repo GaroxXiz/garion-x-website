@@ -1090,6 +1090,19 @@ export const ChatArea: React.FC = () => {
             <MermaidVisualizer chart={code} />
           </div>
         );
+      } else if (
+        (language.toLowerCase() === 'markdown' || 
+         language.toLowerCase() === 'md' || 
+         language.toLowerCase() === 'html' || 
+         language.toLowerCase() === 'text' || 
+         language.toLowerCase() === '') && 
+        (code.includes('![') || code.includes('<img'))
+      ) {
+        parts.push(
+          <span key={match.index} className="text-content">
+            {parseTextWithTables(code)}
+          </span>
+        );
       } else {
         parts.push(
           <div key={match.index} className="code-block-container">
