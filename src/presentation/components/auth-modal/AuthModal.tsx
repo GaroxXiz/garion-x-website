@@ -3,8 +3,10 @@ import { useChat } from '../../context/chat-context';
 import './AuthModal.css';
 
 export const AuthModal: React.FC = () => {
-  const { isAuthModalOpen, setAuthModalOpen, login, sendOtp, verifyOtp } = useChat();
+  const { isAuthModalOpen, setAuthModalOpen, login, sendOtp, verifyOtp, forgotPassword, resetPassword } = useChat();
   const [isLoginTab, setIsLoginTab] = useState(true);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
@@ -24,6 +26,7 @@ export const AuthModal: React.FC = () => {
     setPassword('');
     setOtp('');
     setIsOtpSent(false);
+    setIsForgotPassword(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -32,34 +35,56 @@ export const AuthModal: React.FC = () => {
     setLoadingState(true);
 
     try {
-      if (!isOtpSent) {
-        if (isLoginTab) {
-          // Stage 1 (Login): Verify Email + Password, request OTP
-          const res = await login(email, password);
+      if (isForgotPassword) {
+        if (!isOtpSent) {
+          // Stage 1 (Forgot Password): Request Reset OTP
+          const res = await forgotPassword(email);
           setIsOtpSent(true);
           if (res && res.otp && res.isMock) {
-            alert("[DEV SIMULATION] SMTP_USER & SMTP_PASS belum dikonfigurasi di backend.\n\nSilakan periksa LOG TERMINAL backend Anda untuk mengambil kode OTP.");
+            alert("[DEV SIMULATION] SMTP_USER & SMTP_PASS belum dikonfigurasi di backend.\n\nSilakan periksa LOG TERMINAL backend Anda untuk mengambil kode reset OTP.");
           } else {
-            alert(`Kode OTP keamanan telah berhasil dikirim ke email Gmail Anda: ${email}`);
+            alert(`Kode reset OTP telah berhasil dikirim ke email Gmail Anda: ${email}`);
           }
         } else {
-          // Stage 1 (Register): Request OTP to Email
-          const res = await sendOtp(email);
-          setIsOtpSent(true);
-          if (res && res.otp && res.isMock) {
-            alert("[DEV SIMULATION] SMTP_USER & SMTP_PASS belum dikonfigurasi di backend.\n\nSilakan periksa LOG TERMINAL backend Anda untuk mengambil kode OTP.");
-          } else {
-            alert(`Kode OTP keamanan telah berhasil dikirim ke email Gmail Anda: ${email}`);
-          }
+          // Stage 2 (Forgot Password): Submit Reset OTP and New Password
+          await resetPassword(email, otp, password);
+          alert("Kata sandi Anda berhasil diset ulang! Silakan masuk kembali menggunakan kata sandi baru.");
+          setIsForgotPassword(false);
+          setIsOtpSent(false);
+          setIsLoginTab(true);
+          setPassword('');
+          setOtp('');
         }
       } else {
-        // Stage 2: Verify OTP
-        if (isLoginTab) {
-          await verifyOtp(email, otp);
+        if (!isOtpSent) {
+          if (isLoginTab) {
+            // Stage 1 (Login): Verify Email + Password, request OTP
+            const res = await login(email, password);
+            setIsOtpSent(true);
+            if (res && res.otp && res.isMock) {
+              alert("[DEV SIMULATION] SMTP_USER & SMTP_PASS belum dikonfigurasi di backend.\n\nSilakan periksa LOG TERMINAL backend Anda untuk mengambil kode OTP.");
+            } else {
+              alert(`Kode OTP keamanan telah berhasil dikirim ke email Gmail Anda: ${email}`);
+            }
+          } else {
+            // Stage 1 (Register): Request OTP to Email
+            const res = await sendOtp(email);
+            setIsOtpSent(true);
+            if (res && res.otp && res.isMock) {
+              alert("[DEV SIMULATION] SMTP_USER & SMTP_PASS belum dikonfigurasi di backend.\n\nSilakan periksa LOG TERMINAL backend Anda untuk mengambil kode OTP.");
+            } else {
+              alert(`Kode OTP keamanan telah berhasil dikirim ke email Gmail Anda: ${email}`);
+            }
+          }
         } else {
-          await verifyOtp(email, otp, name, password);
+          // Stage 2: Verify OTP
+          if (isLoginTab) {
+            await verifyOtp(email, otp);
+          } else {
+            await verifyOtp(email, otp, name, password);
+          }
+          handleClose();
         }
-        handleClose();
       }
     } catch (err: any) {
       setErrorMsg(err.message || 'Authentication failed. Please try again.');
@@ -73,7 +98,9 @@ export const AuthModal: React.FC = () => {
     setLoadingState(true);
     try {
       let res;
-      if (isLoginTab) {
+      if (isForgotPassword) {
+        res = await forgotPassword(email);
+      } else if (isLoginTab) {
         res = await login(email, password);
       } else {
         res = await sendOtp(email);
@@ -103,7 +130,7 @@ export const AuthModal: React.FC = () => {
         </button>
 
         {/* Tab Headers */}
-        {!isOtpSent && (
+        {!isOtpSent && !isForgotPassword && (
           <div className="modal-tabs">
             <button
               type="button"
@@ -134,9 +161,12 @@ export const AuthModal: React.FC = () => {
         <div className="modal-brand">
           <h2>GarionX Terminal</h2>
           <p>
-            {isOtpSent 
-              ? 'Enter security authorization code' 
-              : (isLoginTab ? 'Enter your credentials to receive an OTP' : 'Create a new profile with password and OTP')}
+            {isForgotPassword
+              ? (isOtpSent ? 'Verify code and set your new password' : 'Reset your account password via Email OTP')
+              : (isOtpSent 
+                  ? 'Enter security authorization code' 
+                  : (isLoginTab ? 'Enter your credentials to receive an OTP' : 'Create a new profile with password and OTP'))
+            }
           </p>
         </div>
 
@@ -145,90 +175,171 @@ export const AuthModal: React.FC = () => {
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="modal-form">
-          {!isOtpSent ? (
-            <>
-              <div className="form-group">
-                <label htmlFor="email">Email Address</label>
-                <input
-                  type="email"
-                  id="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="e.g. user.gabut@gmail.com"
-                  required
-                  disabled={loadingState}
-                />
-              </div>
-
-              {!isLoginTab && (
+          {isForgotPassword ? (
+            // Forgot Password Flow
+            !isOtpSent ? (
+              <>
                 <div className="form-group">
-                  <label htmlFor="name">Full Name</label>
+                  <label htmlFor="email">Email Address</label>
                   <input
-                    type="text"
-                    id="name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="e.g. User Gabut"
+                    type="email"
+                    id="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="e.g. user.gabut@gmail.com"
                     required
                     disabled={loadingState}
                   />
                 </div>
-              )}
+              </>
+            ) : (
+              <>
+                <div className="form-group">
+                  <label htmlFor="otp">Enter Reset OTP Code</label>
+                  <div className="otp-input-container">
+                    <input
+                      type="text"
+                      id="otp"
+                      value={otp}
+                      onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').substring(0, 6))}
+                      placeholder="••••••"
+                      required
+                      disabled={loadingState}
+                      className="otp-field"
+                    />
+                  </div>
+                </div>
 
-              <div className="form-group">
-                <label htmlFor="password">Password</label>
-                <input
-                  type="password"
-                  id="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                  disabled={loadingState}
-                />
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="form-group">
-                <label htmlFor="otp">Enter 6-Digit OTP Code</label>
-                <div className="otp-input-container">
+                <div className="form-group">
+                  <label htmlFor="password">New Password</label>
                   <input
-                    type="text"
-                    id="otp"
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').substring(0, 6))}
-                    placeholder="••••••"
+                    type="password"
+                    id="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
                     required
                     disabled={loadingState}
-                    className="otp-field"
                   />
-                  <div className="otp-info-footer">
-                    <span className="sent-to-text">Sent to: <strong>{email}</strong></span>
-                    <div className="otp-actions-wrapper">
+                </div>
+
+                <div className="otp-info-footer" style={{ marginTop: '-8px' }}>
+                  <span className="sent-to-text">Sent to: <strong>{email}</strong></span>
+                  <button
+                    type="button"
+                    onClick={handleResendOtp}
+                    className="otp-action-link resend"
+                    disabled={loadingState}
+                  >
+                    Resend OTP
+                  </button>
+                </div>
+              </>
+            )
+          ) : (
+            // Normal Login / Register Flow
+            !isOtpSent ? (
+              <>
+                <div className="form-group">
+                  <label htmlFor="email">Email Address</label>
+                  <input
+                    type="email"
+                    id="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="e.g. user.gabut@gmail.com"
+                    required
+                    disabled={loadingState}
+                  />
+                </div>
+
+                {!isLoginTab && (
+                  <div className="form-group">
+                    <label htmlFor="name">Full Name</label>
+                    <input
+                      type="text"
+                      id="name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="e.g. User Gabut"
+                      required
+                      disabled={loadingState}
+                    />
+                  </div>
+                )}
+
+                <div className="form-group">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <label htmlFor="password">Password</label>
+                    {isLoginTab && (
                       <button
                         type="button"
-                        onClick={handleResendOtp}
-                        className="otp-action-link resend"
-                        disabled={loadingState}
-                      >
-                        Resend OTP
-                      </button>
-                      <button
-                        type="button"
+                        className="forgot-password-trigger"
                         onClick={() => {
-                          setIsOtpSent(false);
+                          setIsForgotPassword(true);
+                          setErrorMsg(null);
+                          setPassword('');
                           setOtp('');
+                          setIsOtpSent(false);
                         }}
-                        className="otp-action-link change-email"
                       >
-                        Change Email
+                        Forgot Password?
                       </button>
+                    )}
+                  </div>
+                  <input
+                    type="password"
+                    id="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                    disabled={loadingState}
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="form-group">
+                  <label htmlFor="otp">Enter 6-Digit OTP Code</label>
+                  <div className="otp-input-container">
+                    <input
+                      type="text"
+                      id="otp"
+                      value={otp}
+                      onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').substring(0, 6))}
+                      placeholder="••••••"
+                      required
+                      disabled={loadingState}
+                      className="otp-field"
+                    />
+                    <div className="otp-info-footer">
+                      <span className="sent-to-text">Sent to: <strong>{email}</strong></span>
+                      <div className="otp-actions-wrapper">
+                        <button
+                          type="button"
+                          onClick={handleResendOtp}
+                          className="otp-action-link resend"
+                          disabled={loadingState}
+                        >
+                          Resend OTP
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsOtpSent(false);
+                            setOtp('');
+                          }}
+                          className="otp-action-link change-email"
+                        >
+                          Change Email
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </>
+              </>
+            )
           )}
 
           <button type="submit" className="submit-auth-btn glow-effect" disabled={loadingState}>
@@ -236,10 +347,30 @@ export const AuthModal: React.FC = () => {
               <div className="auth-spinner"></div>
             ) : (
               <span>
-                {!isOtpSent ? 'Send OTP Code' : 'Verify & Sign In'}
+                {isForgotPassword 
+                  ? (!isOtpSent ? 'Send Reset Code' : 'Reset Password')
+                  : (!isOtpSent ? 'Send OTP Code' : 'Verify & Sign In')}
               </span>
             )}
           </button>
+
+          {isForgotPassword && (
+            <div className="forgot-password-back-container">
+              <button
+                type="button"
+                className="forgot-password-back-btn"
+                onClick={() => {
+                  setIsForgotPassword(false);
+                  setErrorMsg(null);
+                  setPassword('');
+                  setOtp('');
+                  setIsOtpSent(false);
+                }}
+              >
+                ← Back to Sign In
+              </button>
+            </div>
+          )}
         </form>
       </div>
     </div>

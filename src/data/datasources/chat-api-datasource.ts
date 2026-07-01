@@ -338,6 +338,32 @@ export class ChatApiDataSource {
     return response.json();
   }
 
+  async forgotPassword(email: string): Promise<any> {
+    const response = await fetch(`${BASE_URL}/api/auth/forgot-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    if (!response.ok) {
+      const errorMsg = await response.text();
+      throw new Error(errorMsg || 'Failed to request password reset');
+    }
+    return response.json();
+  }
+
+  async resetPassword(email: string, otp: string, newPassword: string): Promise<any> {
+    const response = await fetch(`${BASE_URL}/api/auth/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, otp, newPassword }),
+    });
+    if (!response.ok) {
+      const errorMsg = await response.text();
+      throw new Error(errorMsg || 'Failed to reset password');
+    }
+    return response.json();
+  }
+
   async uploadFile(file: File): Promise<{ url: string; type: string }> {
     const formData = new FormData();
     formData.append('file', file);
