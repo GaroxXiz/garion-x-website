@@ -45,6 +45,8 @@ interface ChatContextType {
   register: (username: string, password: string, email: string, name: string) => Promise<void>;
   sendOtp: (email: string) => Promise<any>;
   verifyOtp: (email: string, otp: string, name?: string, password?: string) => Promise<void>;
+  forgotPassword: (email: string) => Promise<any>;
+  resetPassword: (email: string, otp: string, newPassword: string) => Promise<any>;
   loginWithGoogle: () => void; // Will trigger modal opening
   logout: () => void;
   getProfile: () => Promise<void>;
@@ -361,6 +363,24 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const forgotPassword = async (email: string) => {
+    try {
+      const response = await apiDataSource.forgotPassword(email);
+      return response;
+    } catch (e: any) {
+      throw new Error(e.message || 'Failed to request password reset.');
+    }
+  };
+
+  const resetPassword = async (email: string, otp: string, newPassword: string) => {
+    try {
+      const response = await apiDataSource.resetPassword(email, otp, newPassword);
+      return response;
+    } catch (e: any) {
+      throw new Error(e.message || 'Failed to reset password.');
+    }
+  };
+
   const getProfile = async () => {
     try {
       const response = await apiDataSource.getProfile();
@@ -568,6 +588,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         register,
         sendOtp,
         verifyOtp,
+        forgotPassword,
+        resetPassword,
         loginWithGoogle,
         logout,
         getProfile,
