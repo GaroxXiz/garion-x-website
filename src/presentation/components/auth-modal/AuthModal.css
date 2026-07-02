@@ -21,7 +21,7 @@
   background-image: radial-gradient(circle at top right, rgba(0, 255, 204, 0.03), transparent 70%);
   border: 1px solid rgba(0, 255, 204, 0.25);
   border-radius: 16px;
-  padding: 35px 30px;
+  padding: 52px 30px 30px 30px;
   position: relative;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 30px rgba(0, 255, 204, 0.05);
   display: flex;
@@ -32,8 +32,8 @@
 /* Close Button */
 .modal-close-btn {
   position: absolute;
-  top: 20px;
-  right: 20px;
+  top: 12px;
+  right: 12px;
   background: transparent;
   border: none;
   color: var(--text-secondary);
