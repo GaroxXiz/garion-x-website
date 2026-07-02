@@ -119,7 +119,7 @@ function formatDate(dateStr: string | null): string {
 }
 
 export const UsageModal: React.FC<UsageModalProps> = ({ isOpen, onClose }) => {
-  const { user } = useChat();
+  const { user, setAuthModalOpen } = useChat();
   const isSuperAdmin = user && user.email === 'superadmin@garionx.com';
 
   const [data, setData] = useState<UsageData | null>(null);
@@ -129,6 +129,7 @@ export const UsageModal: React.FC<UsageModalProps> = ({ isOpen, onClose }) => {
   const [activeTab, setActiveTab] = useState<'consumption' | 'system'>('consumption');
 
   const fetchUsage = useCallback(async () => {
+    if (!user) return; // Do not fetch if not logged in
     setLoading(true);
     setError(null);
     setAnimatePct(false);
@@ -142,7 +143,7 @@ export const UsageModal: React.FC<UsageModalProps> = ({ isOpen, onClose }) => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     if (isOpen) {
@@ -255,7 +256,36 @@ export const UsageModal: React.FC<UsageModalProps> = ({ isOpen, onClose }) => {
         </div>
 
         {/* Content */}
-        {loading && !data ? (
+        {!user ? (
+          <div className="usage-error-state" style={{ padding: '40px 20px', gap: '16px' }}>
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--accent-secondary)" strokeWidth="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+            <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', textAlign: 'center', maxWidth: '300px', lineHeight: '1.5' }}>
+              Anda belum masuk. Silakan login terlebih dahulu untuk memonitor penggunaan token AI Anda.
+            </p>
+            <button 
+              className="usage-retry-btn" 
+              style={{ 
+                backgroundColor: 'var(--accent-primary)', 
+                borderColor: 'var(--accent-primary)',
+                color: '#fff',
+                padding: '10px 24px',
+                fontWeight: 700,
+                fontSize: '0.85rem',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px'
+              }}
+              onClick={() => {
+                onClose();
+                setAuthModalOpen(true);
+              }}
+            >
+              Log In
+            </button>
+          </div>
+        ) : loading && !data ? (
           <div className="usage-loading-state">
             <div className="usage-spinner-large"></div>
             <span>Fetching token consumption data...</span>
