@@ -280,6 +280,7 @@ export const ChatInput: React.FC = () => {
             <option value="openai">OpenAI (Mini)</option>
             <option value="gemini">Gemini (Flash)</option>
             <option value="claude">Claude (Sonnet)</option>
+            <option value="arena">Arena Mode (Compare All)</option>
           </select>
           <span className="dropdown-arrow">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
