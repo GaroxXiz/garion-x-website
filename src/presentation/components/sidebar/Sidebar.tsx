@@ -452,8 +452,8 @@ export const Sidebar: React.FC = () => {
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'space-between',
-                            padding: '6px 8px',
-                            borderRadius: 'var(--border-radius-md)',
+                            padding: '8px 12px',
+                            borderRadius: '8px',
                             backgroundColor: 'rgba(255,255,255,0.02)',
                             border: '1px solid rgba(255,255,255,0.03)',
                             cursor: 'pointer',
@@ -461,28 +461,59 @@ export const Sidebar: React.FC = () => {
                             transition: 'var(--transition-smooth)'
                           }}
                         >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <span style={{ fontSize: '0.65rem', transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0)', transition: 'transform 0.2s', display: 'inline-block' }}>▼</span>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-secondary)" strokeWidth="2.5">
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <svg
+                              width="8"
+                              height="8"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="var(--text-secondary)"
+                              strokeWidth="3"
+                              style={{
+                                transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0)',
+                                transition: 'transform 0.2s',
+                                display: 'inline-block'
+                              }}
+                            >
+                              <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-secondary)" strokeWidth="2">
                               <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
                             </svg>
-                            <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-primary)' }}>{folderName}</span>
-                            <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>({folderChats.length})</span>
+                            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '0.3px' }}>{folderName}</span>
+                            <span style={{
+                              fontSize: '0.68rem',
+                              color: 'var(--text-muted)',
+                              backgroundColor: 'rgba(255,255,255,0.04)',
+                              padding: '1px 6px',
+                              borderRadius: '10px',
+                              fontWeight: 600
+                            }}>
+                              {folderChats.length}
+                            </span>
                           </div>
                           
                           <button
+                            className="folder-delete-btn"
                             onClick={(e) => deleteFolder(folderName, e)}
                             style={{
                               background: 'transparent',
                               border: 'none',
-                              color: 'rgba(239, 68, 68, 0.6)',
-                              fontSize: '0.8rem',
+                              color: 'var(--text-muted)',
                               cursor: 'pointer',
-                              padding: '2px'
+                              padding: '3px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              borderRadius: '4px',
+                              transition: 'all 0.15s'
                             }}
                             title="Delete Folder"
                           >
-                            &times;
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                              <line x1="18" y1="6" x2="6" y2="18"></line>
+                              <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
                           </button>
                         </div>
 

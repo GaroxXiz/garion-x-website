@@ -541,3 +541,8 @@
 .folder-contents .chat-item-wrapper {
   margin-top: 2px;
 }
+
+.folder-delete-btn:hover {
+  color: #ef4444 !important;
+  background-color: rgba(239, 68, 68, 0.1) !important;
+}
