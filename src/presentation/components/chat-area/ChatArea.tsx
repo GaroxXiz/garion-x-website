@@ -2,8 +2,31 @@ import React, { useRef, useEffect, useState } from 'react';
 import { useChat } from '../../context/chat-context';
 import { WelcomeState } from '../welcome-state/WelcomeState';
 import { ChatInput } from '../chat-input/ChatInput';
+import { InteractiveCanvas } from '../interactive-canvas/InteractiveCanvas';
 import { BASE_URL } from '../../../data/datasources/chat-api-datasource';
 import './ChatArea.css';
+
+interface ArenaResponses {
+  openai?: string;
+  gemini?: string;
+  claude?: string;
+}
+
+const parseArenaResponse = (content: string): ArenaResponses | null => {
+  if (!content || !content.includes('[ARENA_RESPONSE:')) return null;
+
+  const responses: ArenaResponses = {};
+  
+  const openaiMatch = content.match(/\[ARENA_RESPONSE:\s*openai\]([\s\S]*?)(?=\[ARENA_RESPONSE:|$)/i);
+  const geminiMatch = content.match(/\[ARENA_RESPONSE:\s*gemini\]([\s\S]*?)(?=\[ARENA_RESPONSE:|$)/i);
+  const claudeMatch = content.match(/\[ARENA_RESPONSE:\s*claude\]([\s\S]*?)(?=\[ARENA_RESPONSE:|$)/i);
+
+  if (openaiMatch) responses.openai = openaiMatch[1].trim();
+  if (geminiMatch) responses.gemini = geminiMatch[1].trim();
+  if (claudeMatch) responses.claude = claudeMatch[1].trim();
+
+  return responses;
+};
 
 // Cinematic Image-to-Video Player for AnimateX simulation
 const CinematicVideoPlayer: React.FC<{ src: string }> = ({ src }) => {
@@ -429,6 +452,11 @@ export const ChatArea: React.FC = () => {
   const [selectedVoiceName, setSelectedVoiceName] = useState<string>('');
   const [showVoiceDropdown, setShowVoiceDropdown] = useState(false);
   const voiceDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Interactive Canvas States
+  const [canvasCode, setCanvasCode] = useState<string | null>(null);
+  const [canvasLanguage, setCanvasLanguage] = useState<string>('html');
+  const [isCanvasOpen, setCanvasOpen] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -1108,12 +1136,37 @@ export const ChatArea: React.FC = () => {
           <div key={match.index} className="code-block-container">
             <div className="code-block-header">
               <span>{language}</span>
-              <button
-                onClick={() => navigator.clipboard.writeText(code)}
-                className="copy-code-btn"
-              >
-                Copy
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {['html', 'svg'].includes(language.toLowerCase()) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCanvasCode(code);
+                      setCanvasLanguage(language);
+                      setCanvasOpen(true);
+                    }}
+                    className="preview-canvas-btn"
+                    style={{
+                      background: 'transparent',
+                      border: '1px solid var(--accent-secondary)',
+                      borderRadius: '4px',
+                      padding: '2px 8px',
+                      color: 'var(--accent-secondary)',
+                      fontSize: '0.7rem',
+                      cursor: 'pointer',
+                      fontWeight: 600
+                    }}
+                  >
+                    👁️ Preview Canvas
+                  </button>
+                )}
+                <button
+                  onClick={() => navigator.clipboard.writeText(code)}
+                  className="copy-code-btn"
+                >
+                  Copy
+                </button>
+              </div>
             </div>
             <pre className="code-block-pre">
               {highlightCode(code)}
@@ -1132,6 +1185,53 @@ export const ChatArea: React.FC = () => {
     }
 
     return parts.length > 0 ? parts : parseTextWithTables(content);
+  };
+
+  const renderArenaMessage = (content: string) => {
+    const parsed = parseArenaResponse(content) || {};
+    const models = [
+      { id: 'openai', name: 'OpenAI GPT-4o-mini', color: '#10a37f', content: parsed.openai || '' },
+      { id: 'gemini', name: 'Gemini 1.5 Flash', color: '#1a73e8', content: parsed.gemini || '' },
+      { id: 'claude', name: 'Claude 3.5 Sonnet', color: '#d97706', content: parsed.claude || '' }
+    ];
+
+    return (
+      <div className="arena-grid-layout">
+        {models.map((m) => (
+          <div key={m.id} className="arena-column-card glass-panel">
+            {/* Column Header */}
+            <div className="arena-column-header">
+              <div className="arena-model-info">
+                <span className="arena-glow-dot" style={{ backgroundColor: m.color, boxShadow: `0 0 8px ${m.color}` }} />
+                <strong>{m.name}</strong>
+              </div>
+              {m.content && (
+                <button
+                  className="arena-copy-btn"
+                  onClick={() => navigator.clipboard.writeText(m.content)}
+                  title="Copy model output"
+                >
+                  Copy
+                </button>
+              )}
+            </div>
+
+            {/* Column Content */}
+            <div className="arena-column-content">
+              {m.content ? (
+                renderMessageContent(m.content)
+              ) : (
+                <div className="arena-skeleton-wrapper">
+                  <div className="arena-pulse-bar short" />
+                  <div className="arena-pulse-bar long" />
+                  <div className="arena-pulse-bar medium" />
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
   };
 
   return (
@@ -1319,15 +1419,19 @@ export const ChatArea: React.FC = () => {
         )}
       </header>
 
+      <div className="chat-workspace" style={{ display: 'flex', flex: 1, width: '100%', overflow: 'hidden', position: 'relative' }}>
+        <div className="chat-main-section" style={{ display: 'flex', flexDirection: 'column', flex: 1, height: '100%', overflow: 'hidden' }}>
+
       {/* Main Message list container */}
       <div className="chat-messages-container">
         {messages.length === 0 && !loading ? (
           <WelcomeState />
         ) : (
-          <div className="messages-list">
+          <div className="messages-list" style={activeChat?.model === 'arena' ? { maxWidth: '1200px' } : {}}>
             {messages.map((msg, index) => {
               const isUser = msg.sender === 'user';
               const isLastMessage = index === messages.length - 1;
+              const isMessageArena = !isUser && (activeChat?.model === 'arena' || (msg.content && msg.content.includes('[ARENA_RESPONSE:')));
               return (
                 <div key={msg.id} className={`message-row ${isUser ? 'user-row' : 'bot-row'}`}>
                   {!isUser && (
@@ -1337,7 +1441,10 @@ export const ChatArea: React.FC = () => {
                       </div>
                     </div>
                   )}
-                  <div className={`message-bubble ${isUser ? 'user-bubble' : 'bot-bubble'}`}>
+                  <div 
+                    className={isUser ? "message-bubble user-bubble" : isMessageArena ? "message-bubble bot-bubble bot-bubble-arena" : "message-bubble bot-bubble"}
+                    style={isMessageArena ? { width: '100%', maxWidth: '100%', flex: 1 } : {}}
+                  >
                     {msg.attachmentUrl && (
                       <div className="message-attachment-container">
                         {msg.attachmentType === 'video' ? (
@@ -1408,8 +1515,12 @@ export const ChatArea: React.FC = () => {
                       </div>
                     )}
                     {msg.content && (
-                      <div className="message-content">
-                        {renderMessageContent(msg.content)}
+                      <div className={isMessageArena ? "message-content-arena" : "message-content"}>
+                        {isMessageArena ? (
+                          renderArenaMessage(msg.content)
+                        ) : (
+                          renderMessageContent(msg.content)
+                        )}
                       </div>
                     )}
                     {speakingMessageId === msg.id && (
@@ -1507,10 +1618,19 @@ export const ChatArea: React.FC = () => {
                     {currentPersonality ? currentPersonality.name[0] : 'G'}
                   </div>
                 </div>
-                <div className="message-bubble bot-bubble">
-                  <div className="message-content">
-                    {renderMessageContent(streamingText)}
-                    <span className="blinking-cursor"></span>
+                <div 
+                  className={activeChat?.model === 'arena' ? "message-bubble bot-bubble bot-bubble-arena" : "message-bubble bot-bubble"}
+                  style={activeChat?.model === 'arena' ? { width: '100%', maxWidth: '100%', flex: 1 } : {}}
+                >
+                  <div className={activeChat?.model === 'arena' ? "message-content-arena" : "message-content"}>
+                    {activeChat?.model === 'arena' ? (
+                      renderArenaMessage(streamingText)
+                    ) : (
+                      <>
+                        {renderMessageContent(streamingText)}
+                        <span className="blinking-cursor"></span>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1545,8 +1665,19 @@ export const ChatArea: React.FC = () => {
         )}
       </div>
 
-      {/* Message input */}
-      <ChatInput />
+          {/* Message input */}
+          <ChatInput />
+        </div>
+
+        {/* Interactive Canvas panel */}
+        {isCanvasOpen && (
+          <InteractiveCanvas
+            code={canvasCode}
+            language={canvasLanguage}
+            onClose={() => setCanvasOpen(false)}
+          />
+        )}
+      </div>
     </main>
   );
 };
