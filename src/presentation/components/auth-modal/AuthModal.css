@@ -17,8 +17,9 @@
 .modal-content {
   width: 100%;
   max-width: 440px;
-  background-color: rgba(13, 17, 28, 0.95);
-  border: 1px solid rgba(0, 255, 204, 0.15);
+  background-color: #0b0f19; /* Solid opaque background to prevent sidebar text bleed-through */
+  background-image: radial-gradient(circle at top right, rgba(0, 255, 204, 0.03), transparent 70%);
+  border: 1px solid rgba(0, 255, 204, 0.25);
   border-radius: 16px;
   padding: 35px 30px;
   position: relative;
@@ -116,16 +117,16 @@
 }
 
 .form-group label {
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: #00ffcc;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--accent-secondary);
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.8px;
 }
 
 .form-group input {
-  background-color: rgba(6, 9, 19, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background-color: #0e1322; /* Solid input background */
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 8px;
   padding: 12px 14px;
   color: var(--text-primary);
@@ -135,9 +136,9 @@
 }
 
 .form-group input:focus {
-  border-color: #00ffcc;
-  box-shadow: 0 0 12px rgba(0, 255, 204, 0.15);
-  background-color: rgba(13, 17, 28, 0.95);
+  border-color: var(--accent-secondary);
+  box-shadow: 0 0 12px rgba(0, 217, 255, 0.18);
+  background-color: #11182c;
 }
 
 .form-group input::placeholder {
